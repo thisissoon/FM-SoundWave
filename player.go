@@ -219,9 +219,11 @@ func (fd FdDiscard) Restore() error {
 	return err
 }
 
-func Play(user *string, pass *string, key *string) {
+func Play(user *string, pass *string, key *string, track_id *string) {
 	debug := true
-	uri := "spotify:track:1n4cSlArrPhpAssuyuKVeN"
+	uri := fmt.Sprintf("spotify:track:%s", *track_id)
+
+	log.Println(uri)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, os.Kill)
