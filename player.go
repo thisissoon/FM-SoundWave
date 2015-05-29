@@ -265,7 +265,7 @@ func Play(user *string, pass *string, key *string, track_id *string) {
 		Username: *user,
 		Password: *pass,
 	}
-	if err = session.Login(credentials, false); err != nil {
+	if err = session.Login(credentials, true); err != nil {
 		log.Fatal(err)
 	}
 
