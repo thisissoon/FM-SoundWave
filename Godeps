@@ -4,5 +4,7 @@
 
 # Port Audio Bindings
 code.google.com/p/portaudio-go/portaudio
+# libspotify Bindings
+github.com/op/go-libspotify/spotify 12dd11fb33ecf760c356b65dc1116bc92589dea4
 # Cobra - POSIX CLI
 github.com/spf13/cobra              69e5f196b5d30673deb07a2221d89cf62e4b74ae
