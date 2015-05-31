@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
-	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"code.google.com/p/portaudio-go/portaudio"
 	"github.com/op/go-libspotify/spotify"
@@ -219,14 +218,8 @@ func (fd FdDiscard) Restore() error {
 	return err
 }
 
-func Play(user *string, pass *string, key *string, track_id *string) {
+func NewSession(user *string, pass *string, key *string) (*spotify.Session, *audioWriter) {
 	debug := true
-	uri := fmt.Sprintf("spotify:track:%s", *track_id)
-
-	log.Println(uri)
-
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, os.Kill)
 
 	appKey, err := ioutil.ReadFile(*key)
 	if err != nil {
@@ -242,7 +235,6 @@ func Play(user *string, pass *string, key *string, track_id *string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer audio.Close()
 	silenceStderr.Restore()
 
 	session, err := spotify.NewSession(&spotify.Config{
@@ -259,7 +251,6 @@ func Play(user *string, pass *string, key *string, track_id *string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer session.Close()
 
 	credentials := spotify.Credentials{
 		Username: *user,
@@ -284,9 +275,16 @@ func Play(user *string, pass *string, key *string, track_id *string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-	case <-signals:
-		return
 	}
+
+	log.Println("Session Created")
+
+	return session, audio
+}
+
+func Play(session *spotify.Session, id *string) {
+	uri := fmt.Sprintf("spotify:track:%s", *id)
+	log.Println(uri)
 
 	// Parse the track
 	link, err := session.ParseLink(uri)
@@ -310,7 +308,19 @@ func Play(user *string, pass *string, key *string, track_id *string) {
 	fmt.Println("Playing...")
 	player.Play()
 
-	var input string
-	fmt.Scanln(&input)
+	c1 := time.Tick(time.Millisecond)
+	now := time.Now()
+	start := now
 
+	for {
+		now = <-c1
+		elapsed := now.Sub(start)
+		if elapsed >= track.Duration() {
+			break
+		}
+	}
+
+	fmt.Println("End of Track")
+
+	<-session.EndOfTrackUpdates()
 }

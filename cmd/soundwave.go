@@ -6,6 +6,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 
 	"github.com/spf13/cobra"
 	"github.com/thisissoon/FM-SoundWave"
@@ -25,8 +27,33 @@ var SoundWaveCmd = &cobra.Command{
 	Short: "Play Spotify Music for SOON_ FM",
 	Long:  soundWaveCmdLongDesc,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(*(&spotify_track))
-		player.Play(&spotify_user, &spotify_pass, &spotify_key, &spotify_track)
+
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, os.Interrupt, os.Kill)
+
+		go func() {
+			for sig := range signals {
+				fmt.Println(sig)
+				os.Exit(1)
+			}
+		}()
+
+		ids := []string{
+			"7kFHcGLRFmUYajfLhaOcUK",
+			"2FT9AEeUdZQsHaFu687AHy",
+			"6poX3z4Zmx56OUfoXYkCAc",
+		}
+
+		s, a := player.NewSession(&spotify_user, &spotify_pass, &spotify_key)
+
+		defer s.Close() // Close Session
+		defer a.Close() // Close Audio Writer
+
+		for _, id := range ids {
+			fmt.Println(id)
+			player.Play(s, &id)
+		}
+
 	},
 }
 
