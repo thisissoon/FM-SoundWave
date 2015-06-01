@@ -79,7 +79,7 @@ func init() {
 	SoundWaveCmd.Flags().StringVarP(&spotify_pass, "pass", "p", "", "Spotify Password")
 	SoundWaveCmd.Flags().StringVarP(&spotify_key, "key", "k", "", "Spotify Key Path")
 	SoundWaveCmd.Flags().StringVarP(&spotify_track, "track", "t", "", "Spotify Track ID")
-	SoundWaveCmd.Flags().StringVarP(&redis_uri, "redis", "r", "", "Redis Server URI")
+	SoundWaveCmd.Flags().StringVarP(&redis_uri, "redis", "r", "127.0.0.1:6379", "Redis Server Address")
 	SoundWaveCmd.Flags().StringVarP(&redis_queue, "queue", "q", "", "Redis Queue Name")
 }
 
