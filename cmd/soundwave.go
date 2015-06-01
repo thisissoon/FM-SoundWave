@@ -33,13 +33,16 @@ var SoundWaveCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		s, a := soundwave.NewSession(&spotify_user, &spotify_pass, &spotify_key)
+		p := s.Player()
+		t := soundwave.LoadTrack(s, &spotify_track)
 
 		defer s.Close() // Close Session
 		defer a.Close() // Close Audio Writer
 
 		// Play track in goroutine
 		go func() {
-			soundwave.Play(s, &spotify_track)
+			soundwave.Play(p, t)
+			<-s.EndOfTrackUpdates()
 		}()
 
 		// Log connection state changes
@@ -78,8 +81,22 @@ var SoundWaveCmd = &cobra.Command{
 			defer pubsub.Close()
 
 			for {
-				msg, err := pubsub.Receive()
-				log.Println(msg, err)
+				msgi, _ := pubsub.Receive()
+
+				switch msg := msgi.(type) {
+				case *redis.Subscription:
+					log.Println(msg.Kind, msg.Channel)
+				case *redis.Message:
+					if msg.Payload == "pause" {
+						p.Pause()
+					}
+					if msg.Payload == "play" {
+						p.Play()
+					}
+					log.Println(msg.Channel, msg.Payload)
+				default:
+					log.Println("unknown message: %#v", msgi)
+				}
 			}
 		}()
 

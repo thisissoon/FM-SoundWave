@@ -79,7 +79,7 @@ func NewSession(user *string, pass *string, key *string) (*spotify.Session, *aud
 	return session, audio
 }
 
-func Play(session *spotify.Session, id *string) {
+func LoadTrack(session *spotify.Session, id *string) *spotify.Track {
 	uri := fmt.Sprintf("spotify:track:%s", *id)
 	log.Println(uri)
 
@@ -95,11 +95,16 @@ func Play(session *spotify.Session, id *string) {
 
 	// Load the track and play it
 	track.Wait()
-	player := session.Player()
+
+	return track
+}
+
+func Play(player *spotify.Player, track *spotify.Track) {
 	if err := player.Load(track); err != nil {
 		fmt.Println("%#v", err)
 		log.Fatal(err)
 	}
+
 	defer player.Unload()
 
 	log.Println("Playing...")
@@ -118,7 +123,4 @@ func Play(session *spotify.Session, id *string) {
 	}
 
 	log.Println("End of Track")
-
-	<-session.EndOfTrackUpdates()
-
 }
