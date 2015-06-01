@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"syscall"
-	"time"
 
 	"github.com/op/go-libspotify/spotify"
 )
@@ -99,7 +98,7 @@ func LoadTrack(session *spotify.Session, id *string) *spotify.Track {
 	return track
 }
 
-func Play(player *spotify.Player, track *spotify.Track) {
+func Play(session *spotify.Session, player *spotify.Player, track *spotify.Track) {
 	if err := player.Load(track); err != nil {
 		fmt.Println("%#v", err)
 		log.Fatal(err)
@@ -110,17 +109,7 @@ func Play(player *spotify.Player, track *spotify.Track) {
 	log.Println("Playing...")
 	player.Play()
 
-	c1 := time.Tick(time.Millisecond)
-	now := time.Now()
-	start := now
-
-	for {
-		now = <-c1
-		elapsed := now.Sub(start)
-		if elapsed >= track.Duration() {
-			break
-		}
-	}
+	<-session.EndOfTrackUpdates() // Blocks
 
 	log.Println("End of Track")
 }

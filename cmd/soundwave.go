@@ -8,7 +8,10 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"reflect"
+	"time"
 
+	"github.com/op/go-libspotify/spotify"
 	"github.com/spf13/cobra"
 	"github.com/thisissoon/FM-SoundWave"
 	redis "gopkg.in/redis.v3"
@@ -39,12 +42,6 @@ var SoundWaveCmd = &cobra.Command{
 		defer s.Close() // Close Session
 		defer a.Close() // Close Audio Writer
 
-		// Play track in goroutine
-		go func() {
-			soundwave.Play(p, t)
-			<-s.EndOfTrackUpdates()
-		}()
-
 		// Log connection state changes
 		go func() {
 			for _ = range s.ConnectionStateUpdates() {
@@ -72,8 +69,34 @@ var SoundWaveCmd = &cobra.Command{
 			Addr:    redis_address,
 		})
 
+		// Watches the current Queue, popping a track off the list and playing it
 		go func() {
-			log.Println("Subscribing to Channel:", &redis_channel)
+			for {
+				tick := time.Tick(1 * time.Second)
+				select {
+				case <-tick:
+					// We only want to play tracks if we are logged in, if we are not then
+					// we will try again at the next tick
+					if s.ConnectionState() == spotify.ConnectionStateLoggedIn {
+						v, err := client.LPop("lfoo").Result()
+						if err == redis.Nil {
+							// Key does not exist so no items on the queue, no need to log this, would be
+							// very vebose
+						} else if err != nil {
+							log.Println(err)
+						} else {
+							log.Println(v)
+							log.Println(reflect.TypeOf(v))
+							soundwave.Play(s, p, t) // Blocks
+						}
+					}
+				}
+			}
+		}()
+
+		// Subscribes to a channel and listens for specific messages, pause, play etc
+		go func() {
+			log.Println("Subscribing to Channel:", redis_channel)
 
 			pubsub := client.PubSub()
 			pubsub.Subscribe(redis_channel)
