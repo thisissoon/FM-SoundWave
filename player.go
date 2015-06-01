@@ -75,11 +75,14 @@ func NewSession(user *string, pass *string, key *string) (*spotify.Session, *aud
 	}
 
 	log.Println("Session Created")
+	log.Println(session.ConnectionState())
 
 	return session, audio
 }
 
 func Play(session *spotify.Session, id *string) {
+	log.Println(session.ConnectionState())
+
 	uri := fmt.Sprintf("spotify:track:%s", *id)
 	log.Println(uri)
 
@@ -102,7 +105,7 @@ func Play(session *spotify.Session, id *string) {
 	}
 	defer player.Unload()
 
-	fmt.Println("Playing...")
+	log.Println("Playing...")
 	player.Play()
 
 	c1 := time.Tick(time.Millisecond)
@@ -117,7 +120,9 @@ func Play(session *spotify.Session, id *string) {
 		}
 	}
 
-	fmt.Println("End of Track")
+	log.Println("End of Track")
 
 	<-session.EndOfTrackUpdates()
+
+	log.Println(session.ConnectionState())
 }
