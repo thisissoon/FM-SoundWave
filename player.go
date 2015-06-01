@@ -75,14 +75,11 @@ func NewSession(user *string, pass *string, key *string) (*spotify.Session, *aud
 	}
 
 	log.Println("Session Created")
-	log.Println(session.ConnectionState())
 
 	return session, audio
 }
 
 func Play(session *spotify.Session, id *string) {
-	log.Println(session.ConnectionState())
-
 	uri := fmt.Sprintf("spotify:track:%s", *id)
 	log.Println(uri)
 
@@ -124,5 +121,4 @@ func Play(session *spotify.Session, id *string) {
 
 	<-session.EndOfTrackUpdates()
 
-	log.Println(session.ConnectionState())
 }

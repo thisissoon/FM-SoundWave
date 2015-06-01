@@ -5,7 +5,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"os/signal"
 
@@ -35,8 +35,30 @@ var SoundWaveCmd = &cobra.Command{
 
 		// Play track in goroutine
 		go func() {
-			fmt.Println(spotify_track)
+			log.Println(spotify_track)
 			soundwave.Play(s, &spotify_track)
+		}()
+
+		// Log connection state changes
+		go func() {
+			for _ = range s.ConnectionStateUpdates() {
+				var state string
+				switch s.ConnectionState() {
+				case 0:
+					state = "Logged Out"
+				case 1:
+					state = "Logged In"
+				case 2:
+					state = "Disconnected"
+				case 3:
+					state = "Undefined / Unknown"
+				case 4:
+					state = "Offline"
+				default:
+					state = "Unknown State"
+				}
+				log.Println("Connection State:", state)
+			}
 		}()
 
 		signals := make(chan os.Signal, 1)
@@ -44,7 +66,7 @@ var SoundWaveCmd = &cobra.Command{
 
 		// Run for ever unless we get a signal
 		for sig := range signals {
-			fmt.Println(sig)
+			log.Println(sig)
 			os.Exit(1)
 		}
 
