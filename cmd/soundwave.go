@@ -28,30 +28,24 @@ var SoundWaveCmd = &cobra.Command{
 	Long:  soundWaveCmdLongDesc,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		signals := make(chan os.Signal, 1)
-		signal.Notify(signals, os.Interrupt, os.Kill)
-
-		go func() {
-			for sig := range signals {
-				fmt.Println(sig)
-				os.Exit(1)
-			}
-		}()
-
-		ids := []string{
-			"7kFHcGLRFmUYajfLhaOcUK",
-			"2FT9AEeUdZQsHaFu687AHy",
-			"6poX3z4Zmx56OUfoXYkCAc",
-		}
-
-		s, a := player.NewSession(&spotify_user, &spotify_pass, &spotify_key)
+		s, a := soundwave.NewSession(&spotify_user, &spotify_pass, &spotify_key)
 
 		defer s.Close() // Close Session
 		defer a.Close() // Close Audio Writer
 
-		for _, id := range ids {
-			fmt.Println(id)
-			player.Play(s, &id)
+		// Play track in goroutine
+		go func() {
+			fmt.Println(spotify_track)
+			soundwave.Play(s, &spotify_track)
+		}()
+
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, os.Interrupt, os.Kill)
+
+		// Run for ever unless we get a signal
+		for sig := range signals {
+			fmt.Println(sig)
+			os.Exit(1)
 		}
 
 	},
