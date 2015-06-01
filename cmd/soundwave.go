@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/thisissoon/FM-SoundWave"
+	redis "gopkg.in/redis.v3"
 )
 
 var (
@@ -18,8 +19,9 @@ var (
 	spotify_pass  string
 	spotify_key   string
 	spotify_track string
-	redis_uri     string
+	redis_address string
 	redis_queue   string
+	redis_channel string
 )
 
 var soundWaveCmdLongDesc = `Sound Wave Plays Spotify Music for SOON_ FM`
@@ -62,6 +64,25 @@ var SoundWaveCmd = &cobra.Command{
 			}
 		}()
 
+		client := redis.NewClient(&redis.Options{
+			Network: "tcp",
+			Addr:    redis_address,
+		})
+
+		go func() {
+			log.Println("Subscribing to Channel:", &redis_channel)
+
+			pubsub := client.PubSub()
+			pubsub.Subscribe(redis_channel)
+
+			defer pubsub.Close()
+
+			for {
+				msg, err := pubsub.Receive()
+				log.Println(msg, err)
+			}
+		}()
+
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, os.Kill)
 
@@ -75,12 +96,15 @@ var SoundWaveCmd = &cobra.Command{
 }
 
 func init() {
+	// Spotify Flags
 	SoundWaveCmd.Flags().StringVarP(&spotify_user, "user", "u", "", "Spotify User")
 	SoundWaveCmd.Flags().StringVarP(&spotify_pass, "pass", "p", "", "Spotify Password")
 	SoundWaveCmd.Flags().StringVarP(&spotify_key, "key", "k", "", "Spotify Key Path")
 	SoundWaveCmd.Flags().StringVarP(&spotify_track, "track", "t", "", "Spotify Track ID")
-	SoundWaveCmd.Flags().StringVarP(&redis_uri, "redis", "r", "127.0.0.1:6379", "Redis Server Address")
+	// Redis Flags
+	SoundWaveCmd.Flags().StringVarP(&redis_address, "redis", "r", "127.0.0.1:6379", "Redis Server Address")
 	SoundWaveCmd.Flags().StringVarP(&redis_queue, "queue", "q", "", "Redis Queue Name")
+	SoundWaveCmd.Flags().StringVarP(&redis_channel, "channel", "c", "", "Redis Channel Name")
 }
 
 func main() {
