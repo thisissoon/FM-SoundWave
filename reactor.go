@@ -23,6 +23,8 @@ const (
 	STOP_EVENT   string = "stop"   // Stop the currently playing track
 )
 
+const PAUSE_STATE_KEY = "fm:player:paused"
+
 // Event type to unmarshal message payloads into
 type Event struct {
 	Type string `json:"event"`
@@ -84,36 +86,48 @@ func (r *Reactor) processPayload(payload []byte) error {
 	// Switch the event type and hand off to handler method
 	switch e.Type {
 	case PAUSE_EVENT:
-		r.pausePlayer()
+		return r.pausePlayer()
 	case RESUME_EVENT:
-		r.resumePlayer()
+		return r.resumePlayer()
 	case STOP_EVENT:
-		r.stopTrack()
+		return r.stopTrack()
 	}
 
 	return nil
 }
 
 // Pause the Spotify Player
-func (r *Reactor) pausePlayer() {
+func (r *Reactor) pausePlayer() error {
 	log.Println("Pause Player")
 	// Pause the Track
 	r.SpotifyPlayer.Pause()
+	// Set the Redis Key for Storing Player Pause State
+	err := r.RedisClient.Set(PAUSE_STATE_KEY, "1", 0).Err()
+
+	return err
 }
 
 // Resume the Spotify Player
-func (r *Reactor) resumePlayer() {
+func (r *Reactor) resumePlayer() error {
 	log.Println("Resume Player")
 	// Play the Track
 	r.SpotifyPlayer.Play()
+	// Set the Redis Key for Storing Player Pause State
+	err := r.RedisClient.Set(PAUSE_STATE_KEY, "0", 0).Err()
+
+	return err
 }
 
 // Stop the Current Track - Unloading the track causing the next track
 // to be played
-func (r *Reactor) stopTrack() {
+func (r *Reactor) stopTrack() error {
 	log.Println("Stop Track")
-	// Force the track to stop
+
+	// Force the track to stop by placing a message on the StopTrack
+	// channel which will cause the Player method to unblock
 	StopTrack <- struct{}{}
+
+	return nil // always return nil since no errors can happen here
 }
 
 // Constructor for the Reactor type taking 3 arguments:
