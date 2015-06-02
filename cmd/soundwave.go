@@ -90,34 +90,12 @@ var SoundWaveCmd = &cobra.Command{
 			}
 		}()
 
-		// Subscribes to a channel and listens for specific messages, pause, play etc
-		go func() {
-			log.Println("Subscribing to Channel:", redis_channel)
-
-			pubsub := client.PubSub()
-			pubsub.Subscribe(redis_channel)
-
-			defer pubsub.Close()
-
-			for {
-				msgi, _ := pubsub.Receive()
-
-				switch msg := msgi.(type) {
-				case *redis.Subscription:
-					log.Println(msg.Kind, msg.Channel)
-				case *redis.Message:
-					if msg.Payload == "pause" {
-						p.Pause()
-					}
-					if msg.Payload == "play" {
-						p.Play()
-					}
-					log.Println(msg.Channel, msg.Payload)
-				default:
-					log.Println("unknown message: %#v", msgi)
-				}
-			}
-		}()
+		// Event Reactor Routine
+		go soundwave.EventReactor(&soundwave.ReactorConfig{
+			RedisChannelName: redis_channel,
+			RedisClient:      client,
+			SpotifyPlayer:    p,
+		})
 
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, os.Kill)
