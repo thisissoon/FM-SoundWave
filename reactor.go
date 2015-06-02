@@ -38,6 +38,18 @@ type Reactor struct {
 	SpotifySession   *spotify.Session
 }
 
+// Constructor for the Reactor type taking 3 arguments:
+// - Redis Channel Name
+// - Pointer to Redis Client
+// - Pointer to Spotify Player
+func NewReactor(c string, r *redis.Client, p *spotify.Player) *Reactor {
+	return &Reactor{
+		RedisChannelName: c,
+		RedisClient:      r,
+		SpotifyPlayer:    p,
+	}
+}
+
 // Subscribes to a redis Pub/Sub channel and consumes messages on the channel
 // Once a message is recieved the message it is delegated to the correct
 // handler method
@@ -58,7 +70,7 @@ func (r *Reactor) Consume() {
 		if err != nil {
 			log.Println(err)
 		} else {
-			switch m := msg.(type) {
+			switch m := msg.(type) { // Switch the mesage type
 			case *redis.Subscription:
 				log.Println(strings.Title(m.Kind)+":", m.Channel)
 			case *redis.Message:
@@ -128,17 +140,4 @@ func (r *Reactor) stopTrack() error {
 	StopTrack <- struct{}{}
 
 	return nil // always return nil since no errors can happen here
-}
-
-// Constructor for the Reactor type taking 3 arguments:
-// - Redis Channel Name
-// - Redis Client
-// - Spotify Player
-// - Spotify Session
-func NewReactor(c string, r *redis.Client, p *spotify.Player) *Reactor {
-	return &Reactor{
-		RedisChannelName: c,
-		RedisClient:      r,
-		SpotifyPlayer:    p,
-	}
 }
