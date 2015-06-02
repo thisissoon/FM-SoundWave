@@ -21,7 +21,6 @@ var (
 	spotify_user  string
 	spotify_pass  string
 	spotify_key   string
-	spotify_track string
 	redis_address string
 	redis_queue   string
 	redis_channel string
@@ -37,7 +36,6 @@ var SoundWaveCmd = &cobra.Command{
 
 		s, a := soundwave.NewSession(&spotify_user, &spotify_pass, &spotify_key)
 		p := s.Player()
-		t := soundwave.LoadTrack(s, &spotify_track)
 
 		defer s.Close() // Close Session
 		defer a.Close() // Close Audio Writer
@@ -87,6 +85,8 @@ var SoundWaveCmd = &cobra.Command{
 						} else {
 							log.Println(v)
 							log.Println(reflect.TypeOf(v))
+
+							t := soundwave.LoadTrack(s, &v)
 							soundwave.Play(s, p, t) // Blocks
 						}
 					}
@@ -140,7 +140,6 @@ func init() {
 	SoundWaveCmd.Flags().StringVarP(&spotify_user, "user", "u", "", "Spotify User")
 	SoundWaveCmd.Flags().StringVarP(&spotify_pass, "pass", "p", "", "Spotify Password")
 	SoundWaveCmd.Flags().StringVarP(&spotify_key, "key", "k", "", "Spotify Key Path")
-	SoundWaveCmd.Flags().StringVarP(&spotify_track, "track", "t", "", "Spotify Track ID")
 	// Redis Flags
 	SoundWaveCmd.Flags().StringVarP(&redis_address, "redis", "r", "127.0.0.1:6379", "Redis Server Address")
 	SoundWaveCmd.Flags().StringVarP(&redis_queue, "queue", "q", "", "Redis Queue Name")
