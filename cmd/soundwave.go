@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"reflect"
 	"time"
 
 	"github.com/op/go-libspotify/spotify"
@@ -76,16 +75,13 @@ var SoundWaveCmd = &cobra.Command{
 					// We only want to play tracks if we are logged in, if we are not then
 					// we will try again at the next tick
 					if s.ConnectionState() == spotify.ConnectionStateLoggedIn {
-						v, err := client.LPop("lfoo").Result()
+						v, err := client.LPop(redis_queue).Result()
 						if err == redis.Nil {
 							// Key does not exist so no items on the queue, no need to log this, would be
 							// very vebose
 						} else if err != nil {
 							log.Println(err)
 						} else {
-							log.Println(v)
-							log.Println(reflect.TypeOf(v))
-
 							t := soundwave.LoadTrack(s, &v)
 							soundwave.Play(s, p, t) // Blocks
 						}
