@@ -11,7 +11,33 @@ import (
 	"github.com/op/go-libspotify/spotify"
 )
 
+// Channel to detect when a track should be stopped
 var StopTrack chan struct{}
+
+// Soundwave player, handles holding the connection to Spotify and
+// playing tracks
+type Player struct {
+	Session *spotify.Session
+	Audio   *spotify.AudioConsumer
+	Player  *spotify.Player
+}
+
+// Constructs a new player taking the Spotify user, password and key path
+// as the only arguments
+func NewPlayer(u *string, p *string, key *string) (*Player, error) {
+
+}
+
+// Load Track from Spotify - Does not play it
+func (p *Player) LoadTrack(id string) (*spotify.Track, error) {
+
+}
+
+// Play a track until the end or we get message on the StopTrack
+// channel
+func (p *Player) Play(id string) {
+
+}
 
 func NewSession(user *string, pass *string, key *string) (*spotify.Session, *audioWriter) {
 	debug := true
