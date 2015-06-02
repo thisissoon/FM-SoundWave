@@ -18,19 +18,20 @@ const (
 	STOP_EVENT   string = "stop"   // Stop the currently playing track
 )
 
-// Type for holdiing Reactor configuration
-type ReactorConfig struct {
+// Type for creating an event reactor
+type Reactor struct {
 	RedisChannelName string
 	RedisClient      *redis.Client
 	SpotifyPlayer    *spotify.Player
 }
 
-// Event reactor function. Subscribes to a Redis Pub/Sub channel
-// This is a blocking method and should be called from a goroutine
-func EventReactor(c *ReactorConfig) {
+// Subscribes to a redis Pub/Sub channel and consumes messages on the channel
+// Once a message is recieved the message it is delegated to the correct
+// handler method
+func (r *Reactor) Consume() {
 	// Subscribe to channel, exiting the program on fail
-	pubsub := c.RedisClient.PubSub()
-	err := pubsub.Subscribe(c.RedisChannelName)
+	pubsub := r.RedisClient.PubSub()
+	err := pubsub.Subscribe(r.RedisChannelName)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -48,15 +49,22 @@ func EventReactor(c *ReactorConfig) {
 			case *redis.Subscription:
 				log.Println(strings.Title(m.Kind)+":", m.Channel)
 			case *redis.Message:
-				if m.Payload == "pause" {
-					c.SpotifyPlayer.Pause()
-				}
-				if m.Payload == "play" {
-					c.SpotifyPlayer.Play()
-				}
+
 			default:
 				log.Println("Unknown message: %#v", m)
 			}
 		}
+	}
+}
+
+// Constructor for the Reactor type taking 3 arguments:
+// - Redis Channel Name
+// - Redis Client
+// - Spotify Player
+func NewReactor(c string, r *redis.Client, p *spotify.Player) *Reactor {
+	return &Reactor{
+		RedisChannelName: c,
+		RedisClient:      r,
+		SpotifyPlayer:    p,
 	}
 }

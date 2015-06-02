@@ -90,12 +90,10 @@ var SoundWaveCmd = &cobra.Command{
 			}
 		}()
 
-		// Event Reactor Routine
-		go soundwave.EventReactor(&soundwave.ReactorConfig{
-			RedisChannelName: redis_channel,
-			RedisClient:      client,
-			SpotifyPlayer:    p,
-		})
+		// Create Event Reactor
+		reactor := soundwave.NewReactor(redis_channel, client, p)
+		// Spin off reactor consumer gorountiune
+		go reactor.Consume()
 
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, os.Kill)
