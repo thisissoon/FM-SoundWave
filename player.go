@@ -11,6 +11,8 @@ import (
 	"github.com/op/go-libspotify/spotify"
 )
 
+var StopTrack chan struct{}
+
 func NewSession(user *string, pass *string, key *string) (*spotify.Session, *audioWriter) {
 	debug := true
 
@@ -75,6 +77,8 @@ func NewSession(user *string, pass *string, key *string) (*spotify.Session, *aud
 
 	log.Println("Session Created")
 
+	StopTrack = make(chan struct{}, 1)
+
 	return session, audio
 }
 
@@ -109,7 +113,17 @@ func Play(session *spotify.Session, player *spotify.Player, track *spotify.Track
 	log.Println("Playing...")
 	player.Play()
 
-	<-session.EndOfTrackUpdates() // Blocks
+	// Go routine to listen for end of track updates from the player, once we get one
+	// send a message to our own StopTrack channel
+	go func() {
+		<-session.EndOfTrackUpdates()
+		log.Println("End of Track Updates - Stop Track")
+		StopTrack <- struct{}{}
+	}()
 
+	<-StopTrack // Blocks
+
+	// Unload the Track
+	player.Unload()
 	log.Println("End of Track")
 }
