@@ -10,6 +10,12 @@ import (
 	"github.com/op/go-libspotify/spotify"
 )
 
+const (
+	APPLICATION_NAME  string = "SFM_"
+	CACHE_LOCATION    string = "tmp"
+	SETTINGS_LOCATION string = "tmp"
+)
+
 // Channel to detect when a track should be stopped
 var StopTrack chan struct{}
 
@@ -39,9 +45,9 @@ func NewPlayer(u *string, p *string, k *string) (*Player, error) {
 	// Spotify Session Config
 	config := &spotify.Config{
 		ApplicationKey:   key,
-		ApplicationName:  "SOON_ FM",
-		CacheLocation:    "tmp",
-		SettingsLocation: "tmp",
+		ApplicationName:  APPLICATION_NAME,
+		CacheLocation:    CACHE_LOCATION,
+		SettingsLocation: SETTINGS_LOCATION,
 		AudioConsumer:    audio,
 
 		// Disable playlists to make playback faster
