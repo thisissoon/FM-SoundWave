@@ -8,9 +8,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"time"
 
-	"github.com/op/go-libspotify/spotify"
 	"github.com/spf13/cobra"
 	"github.com/thisissoon/FM-SoundWave"
 	redis "gopkg.in/redis.v3"
@@ -32,7 +30,6 @@ var SoundWaveCmd = &cobra.Command{
 	Short: "Play Spotify Music for SOON_ FM",
 	Long:  soundWaveCmdLongDesc,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		// Create a new Player
 		player, err := soundwave.NewPlayer(&spotify_user, &spotify_pass, &spotify_key)
 		if err != nil {
@@ -42,42 +39,23 @@ var SoundWaveCmd = &cobra.Command{
 		defer player.Session.Close() // Close Session
 		defer player.Audio.Close()   // Close Audio Writer
 
-		client := redis.NewClient(&redis.Options{
+		// Create a redis client
+		redis_client := redis.NewClient(&redis.Options{
 			Network: "tcp",
 			Addr:    redis_address,
 		})
 
-		// Watches the current Queue, popping a track off the list and playing it
-		go func() {
-			for {
-				tick := time.Tick(1 * time.Second)
-				select {
-				case <-tick:
-					// We only want to play tracks if we are logged in, if we are not then
-					// we will try again at the next tick
-					if player.Session.ConnectionState() == spotify.ConnectionStateLoggedIn {
-						// Pop item from list
-						v, err := client.LPop(redis_queue).Result()
-						if err == redis.Nil {
-							// Key does not exist so no items on the queue, no need to log this, would be
-							// very vebose
-						} else if err != nil {
-							log.Println(err)
-						} else {
-							if err := player.Play(&v); err != nil { // Blocks
-								log.Println(err)
-							}
-						}
-					}
-				}
-			}
-		}()
+		// Create playlist
+		playlist := soundwave.NewPlaylist(redis_queue, redis_client, player)
+		// Watch playlist
+		go playlist.Watch()
 
 		// Create Event Reactor
-		reactor := soundwave.NewReactor(redis_channel, client, player)
+		reactor := soundwave.NewReactor(redis_channel, redis_client, player)
 		// Spin off reactor consumer gorountiune
 		go reactor.Consume()
 
+		// Channel to listen for OS Signals
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, os.Kill)
 
@@ -86,7 +64,6 @@ var SoundWaveCmd = &cobra.Command{
 			log.Println(sig)
 			os.Exit(1)
 		}
-
 	},
 }
 
