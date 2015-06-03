@@ -12,7 +12,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/op/go-libspotify/spotify"
 	"gopkg.in/redis.v3"
 )
 
@@ -34,19 +33,18 @@ type Event struct {
 type Reactor struct {
 	RedisChannelName string
 	RedisClient      *redis.Client
-	SpotifyPlayer    *spotify.Player
-	SpotifySession   *spotify.Session
+	Player           *Player
 }
 
 // Constructor for the Reactor type taking 3 arguments:
 // - Redis Channel Name
 // - Pointer to Redis Client
-// - Pointer to Spotify Player
-func NewReactor(c string, r *redis.Client, p *spotify.Player) *Reactor {
+// - Pointer to Player  TODO: Remove and switch to channel notification
+func NewReactor(c string, r *redis.Client, p *Player) *Reactor {
 	return &Reactor{
 		RedisChannelName: c,
 		RedisClient:      r,
-		SpotifyPlayer:    p,
+		Player:           p,
 	}
 }
 
@@ -108,22 +106,22 @@ func (r *Reactor) processPayload(payload []byte) error {
 	return nil
 }
 
-// Pause the Spotify Player
+// Pause the Player
 func (r *Reactor) pausePlayer() error {
 	log.Println("Pause Player")
 	// Pause the Track
-	r.SpotifyPlayer.Pause()
+	r.Player.Pause() // TODO: Use Channel
 	// Set the Redis Key for Storing Player Pause State
 	err := r.RedisClient.Set(PAUSE_STATE_KEY, "1", 0).Err()
 
 	return err
 }
 
-// Resume the Spotify Player
+// Resume the Player
 func (r *Reactor) resumePlayer() error {
 	log.Println("Resume Player")
 	// Play the Track
-	r.SpotifyPlayer.Play()
+	r.Player.Resume() // TODO: Use Channel
 	// Set the Redis Key for Storing Player Pause State
 	err := r.RedisClient.Set(PAUSE_STATE_KEY, "0", 0).Err()
 

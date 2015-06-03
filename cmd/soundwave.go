@@ -33,17 +33,20 @@ var SoundWaveCmd = &cobra.Command{
 	Long:  soundWaveCmdLongDesc,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		s, a := soundwave.NewSession(&spotify_user, &spotify_pass, &spotify_key)
-		p := s.Player()
+		// Create a new Player
+		player, err := soundwave.NewPlayer(&spotify_user, &spotify_pass, &spotify_key)
+		if err != nil {
+			log.Fatalln(err) // Exit on failure to create player
+		}
 
-		defer s.Close() // Close Session
-		defer a.Close() // Close Audio Writer
+		defer player.Session.Close() // Close Session
+		defer player.Audio.Close()   // Close Audio Writer
 
 		// Log connection state changes
 		go func() {
-			for _ = range s.ConnectionStateUpdates() {
+			for _ = range player.Session.ConnectionStateUpdates() {
 				var state string
-				switch s.ConnectionState() {
+				switch player.Session.ConnectionState() {
 				case 0:
 					state = "Logged Out"
 				case 1:
@@ -74,7 +77,8 @@ var SoundWaveCmd = &cobra.Command{
 				case <-tick:
 					// We only want to play tracks if we are logged in, if we are not then
 					// we will try again at the next tick
-					if s.ConnectionState() == spotify.ConnectionStateLoggedIn {
+					if player.Session.ConnectionState() == spotify.ConnectionStateLoggedIn {
+						// Pop item from list
 						v, err := client.LPop(redis_queue).Result()
 						if err == redis.Nil {
 							// Key does not exist so no items on the queue, no need to log this, would be
@@ -82,8 +86,9 @@ var SoundWaveCmd = &cobra.Command{
 						} else if err != nil {
 							log.Println(err)
 						} else {
-							t := soundwave.LoadTrack(s, &v)
-							soundwave.Play(s, p, t) // Blocks
+							if err := player.Play(&v); err != nil { // Blocks
+								log.Println(err)
+							}
 						}
 					}
 				}
@@ -91,7 +96,7 @@ var SoundWaveCmd = &cobra.Command{
 		}()
 
 		// Create Event Reactor
-		reactor := soundwave.NewReactor(redis_channel, client, p)
+		reactor := soundwave.NewReactor(redis_channel, client, player)
 		// Spin off reactor consumer gorountiune
 		go reactor.Consume()
 

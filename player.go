@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"syscall"
 
 	"github.com/op/go-libspotify/spotify"
 )
@@ -17,49 +16,29 @@ var StopTrack chan struct{}
 // Soundwave player, handles holding the connection to Spotify and
 // playing tracks
 type Player struct {
+	Audio   *audioWriter
 	Session *spotify.Session
-	Audio   *spotify.AudioConsumer
 	Player  *spotify.Player
 }
 
 // Constructs a new player taking the Spotify user, password and key path
 // as the only arguments
-func NewPlayer(u *string, p *string, key *string) (*Player, error) {
-
-}
-
-// Load Track from Spotify - Does not play it
-func (p *Player) LoadTrack(id string) (*spotify.Track, error) {
-
-}
-
-// Play a track until the end or we get message on the StopTrack
-// channel
-func (p *Player) Play(id string) {
-
-}
-
-func NewSession(user *string, pass *string, key *string) (*spotify.Session, *audioWriter) {
-	debug := true
-
-	appKey, err := ioutil.ReadFile(*key)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var silenceStderr = DiscardFd(syscall.Stderr)
-	if debug == true {
-		silenceStderr.Restore()
-	}
-
+func NewPlayer(u *string, p *string, k *string) (*Player, error) {
+	// Create a new Audio Writer, this will be used to write the audio steeam to
 	audio, err := newAudioWriter()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err // Exit on fail
 	}
-	silenceStderr.Restore()
 
-	session, err := spotify.NewSession(&spotify.Config{
-		ApplicationKey:   appKey,
+	// Read Key File
+	key, err := ioutil.ReadFile(*k)
+	if err != nil {
+		return nil, err // Exit on fail
+	}
+
+	// Spotify Session Config
+	config := &spotify.Config{
+		ApplicationKey:   key,
 		ApplicationName:  "SOON_ FM",
 		CacheLocation:    "tmp",
 		SettingsLocation: "tmp",
@@ -68,88 +47,116 @@ func NewSession(user *string, pass *string, key *string) (*spotify.Session, *aud
 		// Disable playlists to make playback faster
 		DisablePlaylistMetadataCache: true,
 		InitiallyUnloadPlaylists:     true,
-	})
-	if err != nil {
-		log.Fatal(err)
 	}
 
+	// Spotify Credentials
 	credentials := spotify.Credentials{
-		Username: *user,
-		Password: *pass,
-	}
-	if err = session.Login(credentials, true); err != nil {
-		log.Fatal(err)
+		Username: *u,
+		Password: *p,
 	}
 
-	// Set Bitrate
+	// Create Spotify Session
+	session, err := spotify.NewSession(config)
+	if err != nil {
+		return nil, err // Exit on fail
+	}
+
+	// Login to Spotify
+	if err = session.Login(credentials, true); err != nil {
+		return nil, err // Exit on fail
+	}
+
+	// Set Bitrate (320kpbs)
 	session.PreferredBitrate(spotify.Bitrate320k)
 
-	// Log messages
-	if debug {
-		go func() {
-			for msg := range session.LogMessages() {
-				log.Print(msg)
-			}
-		}()
-	}
+	// Concurrently log Session log messages
+	go func() {
+		for msg := range session.LogMessages() {
+			log.Print(msg)
+		}
+	}()
 
-	// Wait for login and expect it to go fine
+	// Block until login completes, if fails exit
 	select {
 	case err = <-session.LoggedInUpdates():
 		if err != nil {
-			log.Fatal(err)
+			return nil, err // Exit on fail
 		}
 	}
 
-	log.Println("Session Created")
-
+	// Make channel to notify stop track events
 	StopTrack = make(chan struct{}, 1)
 
-	return session, audio
+	// Create Player instance
+	return &Player{
+		Session: session,
+		Audio:   audio,
+		Player:  session.Player(),
+	}, nil
+
 }
 
-func LoadTrack(session *spotify.Session, id *string) *spotify.Track {
-	uri := fmt.Sprintf("spotify:track:%s", *id)
-	log.Println(uri)
-
-	// Parse the track
-	link, err := session.ParseLink(uri)
+// Load Track from Spotify - Does not play it
+func (p *Player) LoadTrack(uri *string) (*spotify.Track, error) {
+	// Parse the track URI
+	link, err := p.Session.ParseLink(*uri)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
+
+	// Load the track
 	track, err := link.Track()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	// Load the track and play it
+	// Block until the track is loaded
 	track.Wait()
 
-	return track
+	return track, nil
 }
 
-func Play(session *spotify.Session, player *spotify.Player, track *spotify.Track) {
-	if err := player.Load(track); err != nil {
-		fmt.Println("%#v", err)
-		log.Fatal(err)
+// Play a track until the end or we get message on the StopTrack
+// channel
+func (p *Player) Play(uri *string) error {
+	// Get the track
+	track, err := p.LoadTrack(uri)
+	if err != nil {
+		return err
 	}
 
-	defer player.Unload()
+	// Load the Track
+	if err := p.Player.Load(track); err != nil {
+		return err
+	}
 
-	log.Println("Playing...")
-	player.Play()
+	// Defer unloading the track until we exit this func
+	defer p.Player.Unload()
+
+	// Play the track
+	log.Println(fmt.Sprintf("Playing: %s", *uri))
+	p.Player.Play() // This does NOT block, we must block ourselves
 
 	// Go routine to listen for end of track updates from the player, once we get one
 	// send a message to our own StopTrack channel
 	go func() {
-		<-session.EndOfTrackUpdates()
+		<-p.Session.EndOfTrackUpdates()
 		log.Println("End of Track Updates - Stop Track")
 		StopTrack <- struct{}{}
 	}()
 
 	<-StopTrack // Blocks
+	log.Println(fmt.Sprintf("End: %s", *uri))
 
-	// Unload the Track
-	player.Unload()
-	log.Println("End of Track")
+	return nil
+}
+
+// Pause Track
+func (p *Player) Pause() {
+	p.Player.Pause()
+}
+
+// Resume Track
+func (p *Player) Resume() {
+	p.Player.Play()
 }
