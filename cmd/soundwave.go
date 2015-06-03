@@ -42,28 +42,6 @@ var SoundWaveCmd = &cobra.Command{
 		defer player.Session.Close() // Close Session
 		defer player.Audio.Close()   // Close Audio Writer
 
-		// Log connection state changes
-		go func() {
-			for _ = range player.Session.ConnectionStateUpdates() {
-				var state string
-				switch player.Session.ConnectionState() {
-				case 0:
-					state = "Logged Out"
-				case 1:
-					state = "Logged In"
-				case 2:
-					state = "Disconnected"
-				case 3:
-					state = "Undefined / Unknown"
-				case 4:
-					state = "Offline"
-				default:
-					state = "Unknown State"
-				}
-				log.Println("Connection State:", state)
-			}
-		}()
-
 		client := redis.NewClient(&redis.Options{
 			Network: "tcp",
 			Addr:    redis_address,

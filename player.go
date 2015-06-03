@@ -87,6 +87,9 @@ func NewPlayer(u *string, p *string, k *string) (*Player, error) {
 	// Make channel to notify stop track events
 	StopTrack = make(chan struct{}, 1)
 
+	// Log connection state changes
+	go WatchConnectionStateUpdates(session)
+
 	// Create Player instance
 	return &Player{
 		Session: session,
@@ -140,7 +143,7 @@ func (p *Player) Play(uri *string) error {
 	// Go routine to listen for end of track updates from the player, once we get one
 	// send a message to our own StopTrack channel
 	go func() {
-		<-p.Session.EndOfTrackUpdates()
+		<-p.Session.EndOfTrackUpdates() // Blocks
 		log.Println("End of Track Updates - Stop Track")
 		StopTrack <- struct{}{}
 	}()
@@ -159,4 +162,31 @@ func (p *Player) Pause() {
 // Resume Track
 func (p *Player) Resume() {
 	p.Player.Play()
+}
+
+// Watches the connection state changes with the Spotify Session and
+// logs them. Note: this function blocks
+//
+// TODO: On changes of the connection state to anything but logged in
+//       try to relogin - Unknown if this is required yet
+func WatchConnectionStateUpdates(session *spotify.Session) {
+	// Blocking loop, subscribes to session connection state channel
+	for _ = range session.ConnectionStateUpdates() {
+		var state string
+		switch session.ConnectionState() {
+		case 0:
+			state = "Logged Out"
+		case 1:
+			state = "Logged In"
+		case 2:
+			state = "Disconnected"
+		case 3:
+			state = "Undefined / Unknown"
+		case 4:
+			state = "Offline"
+		default:
+			state = "Unknown State"
+		}
+		log.Println("Connection State:", state)
+	}
 }
