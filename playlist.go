@@ -14,6 +14,21 @@ import (
 
 const CURRENT_KEY string = "fm:player:current"
 
+const (
+	PLAY_EVENT string = "play"
+	END_EVENT  string = "end"
+)
+
+// Type for creating a play event message to publish to redis, JSON structure is
+// as follows:
+//
+// {"event": "play", "uri": "spotify:track:1234", "user": "1234"}
+type PublishEvent struct {
+	Event string `json:"event"`
+	Uri   string `json:"uri"`
+	User  string `json:"user"`
+}
+
 // Type for unmarshaling a playlist item JSON string
 type PlaylistItem struct {
 	Uri  string `json:"uri"`
@@ -22,17 +37,19 @@ type PlaylistItem struct {
 
 // Type for watching the playlist queue
 type Playlist struct {
-	RedisKeyName string
-	RedisClient  *redis.Client
-	Player       *Player
+	RedisKeyName     string
+	RedisChannelName string
+	RedisClient      *redis.Client
+	Player           *Player
 }
 
 // Constructs a New Playlist
-func NewPlaylist(k string, r *redis.Client, p *Player) *Playlist {
+func NewPlaylist(k string, c string, r *redis.Client, p *Player) *Playlist {
 	return &Playlist{
-		RedisKeyName: k,
-		RedisClient:  r,
-		Player:       p,
+		RedisKeyName:     k,
+		RedisChannelName: c,
+		RedisClient:      r,
+		Player:           p,
 	}
 }
 
@@ -57,27 +74,106 @@ func (p *Playlist) Watch() {
 					log.Println(err)
 				} else {
 					// Play the item we just popped off the list
-					err := p.RedisClient.Set(CURRENT_KEY, value, 0).Err()
-					if err != nil {
-						log.Println(err)
-					} else {
-						p.Play(value) // Blocks
-					}
+					p.play(value) // Blocks
 				}
 			}
 		}
 	}
 }
 
-//
-func (p *Playlist) Play(value string) {
+// Play the track popped of the list, this unmarshales the JSON
+// value to get the track uri and pass it to the player to play
+func (p *Playlist) play(value string) {
 	item := &PlaylistItem{}
 	err := json.Unmarshal([]byte(value[:]), item)
 	if err != nil {
 		log.Println(err)
 	} else {
-		if err := p.Player.Play(&item.Uri); err != nil { // Blocks
+		// Publish Play Event
+		if err := p.publishPlayEvent(item); err != nil {
 			log.Println(err)
+		} else {
+			// Play the Track
+			if err := p.Player.Play(&item.Uri); err != nil { // Blocks
+				log.Println(err)
+			} else {
+				// Publish End Event
+				if err := p.publishEndEvent(item); err != nil {
+					log.Println(err)
+				}
+			}
 		}
 	}
+}
+
+// Publishes a Play event to a Redis channel and also sets the value
+// for the fm:player:current key
+func (p *Playlist) publishPlayEvent(item *PlaylistItem) error {
+	log.Println("Publish Play Event")
+
+	var err error
+
+	// Generate Current JSON payload
+	current, err := json.Marshal(&PlaylistItem{
+		Uri:  item.Uri,
+		User: item.User,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Set Current Track
+	err = p.RedisClient.Set(CURRENT_KEY, string(current[:]), 0).Err()
+	if err != nil {
+		return err
+	}
+
+	// Generate message JSON Payload
+	message, err := json.Marshal(&PublishEvent{
+		Event: PLAY_EVENT,
+		Uri:   item.Uri,
+		User:  item.User,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Publish Message
+	err = p.RedisClient.Publish(p.RedisChannelName, string(message[:])).Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Publish end event to a Redis Channel and also delete the fm:player:current key
+func (p *Playlist) publishEndEvent(item *PlaylistItem) error {
+	log.Println("Publish End Event")
+
+	var err error
+
+	// Delete Current Track Key
+	err = p.RedisClient.Del(CURRENT_KEY).Err()
+	if err != nil {
+		return err
+	}
+
+	// Generate message JSON Payload
+	message, err := json.Marshal(&PublishEvent{
+		Event: END_EVENT,
+		Uri:   item.Uri,
+		User:  item.User,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Publish Message
+	err = p.RedisClient.Publish(p.RedisChannelName, string(message[:])).Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

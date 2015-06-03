@@ -46,7 +46,7 @@ var SoundWaveCmd = &cobra.Command{
 		})
 
 		// Create playlist
-		playlist := soundwave.NewPlaylist(redis_queue, redis_client, player)
+		playlist := soundwave.NewPlaylist(redis_queue, redis_channel, redis_client, player)
 		// Watch playlist
 		go playlist.Watch()
 

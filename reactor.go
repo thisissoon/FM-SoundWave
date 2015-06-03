@@ -108,7 +108,7 @@ func (r *Reactor) processPayload(payload []byte) error {
 
 // Pause the Player
 func (r *Reactor) pausePlayer() error {
-	log.Println("Pause Player")
+	log.Println("Pause Event")
 	// Pause the Track
 	r.Player.Pause() // TODO: Use Channel
 	// Set the Redis Key for Storing Player Pause State
@@ -119,7 +119,7 @@ func (r *Reactor) pausePlayer() error {
 
 // Resume the Player
 func (r *Reactor) resumePlayer() error {
-	log.Println("Resume Player")
+	log.Println("Resume Event")
 	// Play the Track
 	r.Player.Resume() // TODO: Use Channel
 	// Set the Redis Key for Storing Player Pause State
@@ -131,7 +131,7 @@ func (r *Reactor) resumePlayer() error {
 // Stop the Current Track - Unloading the track causing the next track
 // to be played
 func (r *Reactor) stopTrack() error {
-	log.Println("Stop Track")
+	log.Println("Stop Event")
 
 	// Force the track to stop by placing a message on the StopTrack
 	// channel which will cause the Player method to unblock
