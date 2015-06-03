@@ -19,9 +19,13 @@ SoundWave relies on 2 packages to be installed on your system:
 Ensure you have Golang installed and your `$GOPATH` set correctly. Then run:
 
 ```
-go get github.com/thisissoon/FM-Soundwave/cmd
-go build -o /usr/local/bin/soundwave github.com/thisissoon/FM-SoundWave/cmd
+go get github.com/thisissoon/FM-Soundwave/...
+go install github.com/thisissoon/FM-Soundwave/...
 ```
+
+The binary will be installed to `$GOPATH/bin/soundwave`.
+Update your path to include this: `export PATH=$PATH:$GOPATH/bin`
+
 
 # Usage
 
