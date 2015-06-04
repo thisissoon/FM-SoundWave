@@ -108,18 +108,21 @@ func NewPlayer(u *string, p *string, k *string) (*Player, error) {
 // Load Track from Spotify - Does not play it
 func (p *Player) LoadTrack(uri *string) (*spotify.Track, error) {
 	// Parse the track URI
+	log.Println("Parse link:", uri)
 	link, err := p.Session.ParseLink(*uri)
 	if err != nil {
 		return nil, err
 	}
 
-	// Load the track
+	// Get track link
+	log.Println("Get Track Link")
 	track, err := link.Track()
 	if err != nil {
 		return nil, err
 	}
 
 	// Block until the track is loaded
+	log.Println("Wait for Track")
 	track.Wait()
 
 	return track, nil
@@ -129,12 +132,14 @@ func (p *Player) LoadTrack(uri *string) (*spotify.Track, error) {
 // channel
 func (p *Player) Play(uri *string) error {
 	// Get the track
+	log.Println("Load Track:", uri)
 	track, err := p.LoadTrack(uri)
 	if err != nil {
 		return err
 	}
 
 	// Load the Track
+	log.Println("Load Track into Player")
 	if err := p.Player.Load(track); err != nil {
 		return err
 	}
