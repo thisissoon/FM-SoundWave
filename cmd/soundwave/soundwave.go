@@ -5,13 +5,13 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
 
 	"github.com/spf13/cobra"
 	"github.com/thisissoon/FM-SoundWave"
 	redis "gopkg.in/redis.v3"
+	log "github.com/Sirupsen/logrus"
 )
 
 var (
