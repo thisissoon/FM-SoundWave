@@ -3,6 +3,7 @@
 package soundwave
 
 import (
+	"time"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -18,13 +19,48 @@ const (
 
 // Channel to detect when a track should be stopped
 var StopTrack chan struct{}
+var StopTimer chan struct{}
+
+type Ticker struct {
+	duration	int
+	step		int
+}
+
+func (t *Ticker) Start() {
+	t.step = 1
+	t.duration = 1
+}
+
+func (t *Ticker) Stop() {
+	t.duration = 1
+	t.step = 0
+}
+
+func (t *Ticker) Play() {
+	t.step = 1
+}
+
+func (t *Ticker) Increase() {
+	t.duration = t.duration + t.step
+}
+
+func (t *Ticker) Pause() {
+	t.step = 0
+}
+
+func NewTicker() *Ticker {
+	StopTimer = make(chan struct{}, 1)
+	return &Ticker{}
+}
+
 
 // Soundwave player, handles holding the connection to Spotify and
 // playing tracks
 type Player struct {
-	Audio   *audioWriter
-	Session *spotify.Session
-	Player  *spotify.Player
+	Audio   	 *audioWriter
+	Session 	 *spotify.Session
+	Player  	 *spotify.Player
+	TrackTicker  *Ticker
 }
 
 // Constructs a new player taking the Spotify user, password and key path
@@ -98,9 +134,10 @@ func NewPlayer(u *string, p *string, k *string) (*Player, error) {
 
 	// Create Player instance
 	return &Player{
-		Session: session,
-		Audio:   audio,
-		Player:  session.Player(),
+		Session:     session,
+		Audio:   	 audio,
+		Player:  	 session.Player(),
+		TrackTicker: NewTicker(),
 	}, nil
 
 }
@@ -143,23 +180,39 @@ func (p *Player) Play(uri *string) error {
 	if err := p.Player.Load(track); err != nil {
 		return err
 	}
-
+	log.Println("Track", )
 	// Defer unloading the track until we exit this func
 	defer p.Player.Unload()
 
 	// Play the track
 	log.Println(fmt.Sprintf("Playing: %s", *uri))
 	p.Player.Play() // This does NOT block, we must block ourselves
+	p.TrackTicker.Start()
+
+	// Runs a loop which increases track duration every second
+	go func() (error) {
+		for {
+			tick := time.Tick(1 * time.Second)
+			select {
+				case <-StopTimer:
+					return nil
+				case <-tick:
+					p.TrackTicker.Increase()
+			}
+		}
+	}()
 
 	// Go routine to listen for end of track updates from the player, once we get one
 	// send a message to our own StopTrack channel
 	go func() {
 		<-p.Session.EndOfTrackUpdates() // Blocks
 		log.Println("End of Track Updates - Stop Track")
+		p.TrackTicker.Stop()
 		StopTrack <- struct{}{}
 	}()
 
 	<-StopTrack // Blocks
+	StopTimer <- struct{}{}
 	log.Println(fmt.Sprintf("End: %s", *uri))
 
 	return nil
@@ -168,11 +221,17 @@ func (p *Player) Play(uri *string) error {
 // Pause Track
 func (p *Player) Pause() {
 	p.Player.Pause()
+	p.TrackTicker.Pause()
 }
 
 // Resume Track
 func (p *Player) Resume() {
 	p.Player.Play()
+	p.TrackTicker.Play()
+}
+
+func (p *Player) isPlaying() (bool) {
+	return p.TrackTicker.step > 0
 }
 
 // Watches the connection state changes with the Spotify Session and
