@@ -14,7 +14,7 @@ import (
 )
 
 const CURRENT_KEY string = "fm:player:current"
-const CURRENT_TRACK_DURATION_KEY string = "fm:player:progress"
+const CURRENT_TRACK_ELAPSED_TIME string = "fm:player:elapsed_time"
 
 const (
 	PLAY_EVENT string = "play"
@@ -90,11 +90,11 @@ func (p *Playlist) CurrentTrackDurationPublisher() {
 		tick := time.Tick(1 * time.Second)
 		select {
 		case <-tick:
-			duration := p.Player.TrackTicker.duration
-			if p.Player.isPlaying() {
-				p.RedisClient.Set(CURRENT_TRACK_DURATION_KEY, strconv.Itoa(duration), 0).Err()
+			duration := p.Player.CurrentElapsedTime()
+			if p.Player.IsPlaying() {
+				p.RedisClient.Set(CURRENT_TRACK_ELAPSED_TIME, strconv.Itoa(duration), 0).Err()
 			} else {
-				p.RedisClient.Del(CURRENT_TRACK_DURATION_KEY)
+				p.RedisClient.Del(CURRENT_TRACK_ELAPSED_TIME)
 			}
 		}
 	}

@@ -236,8 +236,12 @@ func (p *Player) Resume() {
 	p.TrackTicker.Play()
 }
 
-func (p *Player) isPlaying() (bool) {
+func (p *Player) IsPlaying() (bool) {
 	return p.TrackTicker.step > 0
+}
+
+func (p *Player) CurrentElapsedTime() (int) {
+	return p.TrackTicker.duration
 }
 
 // Watches the connection state changes with the Spotify Session and
