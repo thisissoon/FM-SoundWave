@@ -22,8 +22,8 @@ var StopTrack chan struct{}
 var StopTimer chan struct{}
 
 type Ticker struct {
-	duration	int
-	step		int
+	duration  int
+	step      int
 }
 
 func (t *Ticker) Start() {
@@ -57,9 +57,9 @@ func NewTicker() *Ticker {
 // Soundwave player, handles holding the connection to Spotify and
 // playing tracks
 type Player struct {
-	Audio   	 *audioWriter
-	Session 	 *spotify.Session
-	Player  	 *spotify.Player
+	Audio        *audioWriter
+	Session      *spotify.Session
+	Player       *spotify.Player
 	TrackTicker  *Ticker
 }
 
@@ -135,8 +135,8 @@ func NewPlayer(u *string, p *string, k *string) (*Player, error) {
 	// Create Player instance
 	return &Player{
 		Session:     session,
-		Audio:   	 audio,
-		Player:  	 session.Player(),
+		Audio:       audio,
+		Player:      session.Player(),
 		TrackTicker: NewTicker(),
 	}, nil
 
@@ -180,7 +180,7 @@ func (p *Player) Play(uri *string) error {
 	if err := p.Player.Load(track); err != nil {
 		return err
 	}
-	log.Println("Track", )
+
 	// Defer unloading the track until we exit this func
 	defer p.Player.Unload()
 
@@ -190,32 +190,38 @@ func (p *Player) Play(uri *string) error {
 	p.TrackTicker.Start()
 
 	// Runs a loop which increases track duration every second
-	go func() (error) {
-		for {
-			tick := time.Tick(1 * time.Second)
-			select {
-				case <-StopTimer:
-					return nil
-				case <-tick:
-					p.TrackTicker.Increase()
-			}
-		}
-	}()
+	go p.tickerIncreaser()
 
 	// Go routine to listen for end of track updates from the player, once we get one
 	// send a message to our own StopTrack channel
-	go func() {
-		<-p.Session.EndOfTrackUpdates() // Blocks
-		log.Println("End of Track Updates - Stop Track")
-		p.TrackTicker.Stop()
-		StopTrack <- struct{}{}
-	}()
+	go p.EndTrack()
 
 	<-StopTrack // Blocks
 	StopTimer <- struct{}{}
 	log.Println(fmt.Sprintf("End: %s", *uri))
 
 	return nil
+}
+
+// Increase ticker duration
+func (p *Player) tickerIncreaser() (error) {
+	for {
+		tick := time.Tick(1 * time.Second)
+		select {
+			case <-StopTimer:
+				return nil
+			case <-tick:
+				p.TrackTicker.Increase()
+		}
+	}
+}
+
+// Track ends
+func (p *Player) EndTrack() {
+	<-p.Session.EndOfTrackUpdates() // Blocks
+	log.Println("End of Track Updates - Stop Track")
+	p.TrackTicker.Stop()
+	StopTrack <- struct{}{}
 }
 
 // Pause Track

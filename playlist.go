@@ -14,7 +14,7 @@ import (
 )
 
 const CURRENT_KEY string = "fm:player:current"
-const CURRENT_TRACK_DURATION_KEY string = "fm:player:current_track_duration_key"
+const CURRENT_TRACK_DURATION_KEY string = "fm:player:progress"
 
 const (
 	PLAY_EVENT string = "play"
