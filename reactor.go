@@ -9,10 +9,10 @@ package soundwave
 
 import (
 	"encoding/json"
-	"log"
 	"strings"
 
 	"gopkg.in/redis.v3"
+	log "github.com/Sirupsen/logrus"
 )
 
 // Events we need to listen for
@@ -66,18 +66,18 @@ func (r *Reactor) Consume() {
 	for {
 		msg, err := pubsub.Receive() // recieve a message from the channel
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 		} else {
 			switch m := msg.(type) { // Switch the mesage type
 			case *redis.Subscription:
-				log.Println(strings.Title(m.Kind)+":", m.Channel)
+				log.Info(strings.Title(m.Kind)+":", m.Channel)
 			case *redis.Message:
 				err := r.processPayload([]byte(m.Payload))
 				if err != nil {
-					log.Println(err)
+					log.WithFields(log.Fields{"err": err, "payload": m.Payload}).Error("enable to parse a message")
 				}
 			default:
-				log.Println("Unknown message: %#v", m)
+				log.Error("Unknown message: %#v", m)
 			}
 		}
 	}
@@ -108,7 +108,7 @@ func (r *Reactor) processPayload(payload []byte) error {
 
 // Pause the Player
 func (r *Reactor) pausePlayer() error {
-	log.Println("Pause Event")
+	log.WithFields(log.Fields{"event": "pause",}).Info("event received")
 	// Pause the Track
 	r.Player.Pause() // TODO: Use Channel
 	// Set the Redis Key for Storing Player Pause State
@@ -119,7 +119,7 @@ func (r *Reactor) pausePlayer() error {
 
 // Resume the Player
 func (r *Reactor) resumePlayer() error {
-	log.Println("Resume Event")
+	log.WithFields(log.Fields{"event": "resume",}).Info("event received")
 	// Play the Track
 	r.Player.Resume() // TODO: Use Channel
 	// Set the Redis Key for Storing Player Pause State
@@ -131,7 +131,7 @@ func (r *Reactor) resumePlayer() error {
 // Stop the Current Track - Unloading the track causing the next track
 // to be played
 func (r *Reactor) stopTrack() error {
-	log.Println("Stop Event")
+	log.WithFields(log.Fields{"event": "stop",}).Info("event received")
 
 	// Force the track to stop by placing a message on the StopTrack
 	// channel which will cause the Player method to unblock

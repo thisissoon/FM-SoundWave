@@ -4,13 +4,13 @@ package soundwave
 
 import (
 	"encoding/json"
-	"log"
 	"time"
 	"strconv"
 
 	"github.com/op/go-libspotify/spotify"
 
 	"gopkg.in/redis.v3"
+	log "github.com/Sirupsen/logrus"
 )
 
 const CURRENT_KEY string = "fm:player:current"

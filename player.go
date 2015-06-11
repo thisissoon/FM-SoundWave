@@ -6,9 +6,9 @@ import (
 	"time"
 	"fmt"
 	"io/ioutil"
-	"log"
 
 	"github.com/op/go-libspotify/spotify"
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -252,21 +252,19 @@ func (p *Player) CurrentElapsedTime() (int) {
 func WatchConnectionStateUpdates(session *spotify.Session) {
 	// Blocking loop, subscribes to session connection state channel
 	for _ = range session.ConnectionStateUpdates() {
-		var state string
 		switch session.ConnectionState() {
 		case 0:
-			state = "Logged Out"
+			log.WithFields(log.Fields{"state": "Logged Out", }).Fatal("Connection State")
 		case 1:
-			state = "Logged In"
+			log.WithFields(log.Fields{"state": "Logged In", }).Info("Connection State")
 		case 2:
-			state = "Disconnected"
+			log.WithFields(log.Fields{"state": "Disconnected", }).Warn("Connection State")
 		case 3:
-			state = "Undefined / Unknown"
+			log.WithFields(log.Fields{"state": "Undefined / Unknown",}).Warn("Connection State")
 		case 4:
-			state = "Offline"
+			log.WithFields(log.Fields{"state": "Offline", }).Warn("Connection State")
 		default:
-			state = "Unknown State"
+			log.WithFields(log.Fields{"state": "Unknown State", }).Warn("Connection State")
 		}
-		log.Println("Connection State:", state)
 	}
 }
