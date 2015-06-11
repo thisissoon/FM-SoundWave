@@ -50,6 +50,9 @@ var SoundWaveCmd = &cobra.Command{
 		// Watch playlist
 		go playlist.Watch()
 
+		// Publish track duration
+		go playlist.CurrentTrackDurationPublisher()
+
 		// Create Event Reactor
 		reactor := soundwave.NewReactor(redis_channel, redis_client, player)
 		// Spin off reactor consumer gorountiune

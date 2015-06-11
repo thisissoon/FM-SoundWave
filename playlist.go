@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log"
 	"time"
+	"strconv"
 
 	"github.com/op/go-libspotify/spotify"
 
@@ -13,6 +14,7 @@ import (
 )
 
 const CURRENT_KEY string = "fm:player:current"
+const CURRENT_TRACK_ELAPSED_TIME string = "fm:player:elapsed_time"
 
 const (
 	PLAY_EVENT string = "play"
@@ -76,6 +78,23 @@ func (p *Playlist) Watch() {
 					// Play the item we just popped off the list
 					p.play(value) // Blocks
 				}
+			}
+		}
+	}
+}
+
+
+// Publish current tract duration into redis
+func (p *Playlist) CurrentTrackDurationPublisher() {
+	for {
+		tick := time.Tick(1 * time.Second)
+		select {
+		case <-tick:
+			duration := p.Player.CurrentElapsedTime()
+			if p.Player.IsPlaying() {
+				p.RedisClient.Set(CURRENT_TRACK_ELAPSED_TIME, strconv.Itoa(duration), 0).Err()
+			} else {
+				p.RedisClient.Del(CURRENT_TRACK_ELAPSED_TIME)
 			}
 		}
 	}
