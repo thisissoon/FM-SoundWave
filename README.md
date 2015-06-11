@@ -73,7 +73,7 @@ This will produce a ``soundwave`` binary at the root of the directory.
 
 ## Usage
 
-SoundWave takes 6 arguments:
+SoundWave takes 7 arguments:
 
 * `-u/--user`: Spotify User Name
 * `-p/--pass`: Spotify Password
@@ -81,6 +81,7 @@ SoundWave takes 6 arguments:
 * `-r/--redis`: Redis Server Address, defaults to `127.0.0.1:6379`
 * `-c/--channel`: Redis Pub/Sub Channel Name
 * `-q/--queue`: Redis Queue Key Name
+* `-l/--log_level`: Log level - `info`, `debug`, `warn`, `error`, `fatal`, `panic`
 
 ```
 soundwave -u foo -p -bar -k /spotify.key -c foo -q bar
