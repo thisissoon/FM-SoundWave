@@ -64,38 +64,28 @@ func (p *Playlist) Watch() {
 	for {
 		if p.Player.Session.ConnectionState() == spotify.ConnectionStateLoggedIn {
 			// Get the next track of the queue
-			track, err := p.GetNext()
-
-			// We have a track and no err so play
-			if track != "" && err == nil {
-				p.play(track) // Blocks
-			}
-
-			// Track is nil so we have no more items in the queue so
-			// lets wait for a track to be added before we go around
-			// again
-			if track == "" && err == nil {
-				log.Println("Waitng for Add Track Event")
-				<-AddTrack // Blocks
-			}
+			track, err := p.Next() // Blocks until we get an item on the queue
 
 			// We got an err from Redis, lets just log it
 			if err != nil {
 				log.Println(err)
+			} else {
+				p.play(track) // Blocks
 			}
 		}
 	}
 }
 
 // Pop track of the top of the queue returning the value of the key or nil
-func (p *Playlist) GetNext() (string, error) {
-	value, err := p.RedisClient.LPop(p.RedisKeyName).Result()
+func (p *Playlist) Next() (string, error) {
+	// Value will be a []string containing [key, value]
+	result, err := p.RedisClient.BLPop(0, p.RedisKeyName).Result() // Blocks
 	if err == redis.Nil {
 		return "", nil // No key so no queue
 	} else if err != nil {
 		return "", err
 	} else {
-		return value, nil
+		return result[1], nil
 	}
 }
 

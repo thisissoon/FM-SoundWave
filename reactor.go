@@ -15,12 +15,8 @@ import (
 	"gopkg.in/redis.v3"
 )
 
-// Channel for add track eveents
-var AddTrack chan struct{}
-
 // Events we need to listen for
 const (
-	ADD_EVENT    string = "add"    // Add track to queue event
 	RESUME_EVENT string = "resume" // Resume paused track
 	PAUSE_EVENT  string = "pause"  // Pause a playing track
 	STOP_EVENT   string = "stop"   // Stop the currently playing track
@@ -45,9 +41,6 @@ type Reactor struct {
 // - Pointer to Redis Client
 // - Pointer to Player  TODO: Remove and switch to channel notification
 func NewReactor(c string, r *redis.Client, p *Player) *Reactor {
-	// Make our Add Track Channel
-	AddTrack = make(chan struct{}, 1)
-	// Return a new Reactor
 	return &Reactor{
 		RedisChannelName: c,
 		RedisClient:      r,
@@ -102,8 +95,6 @@ func (r *Reactor) processPayload(payload []byte) error {
 
 	// Switch the event type and hand off to handler method
 	switch e.Type {
-	case ADD_EVENT:
-		return r.addTrack()
 	case PAUSE_EVENT:
 		return r.pausePlayer()
 	case RESUME_EVENT:
@@ -113,18 +104,6 @@ func (r *Reactor) processPayload(payload []byte) error {
 	}
 
 	return nil
-}
-
-// A track was added to the player
-func (r *Reactor) addTrack() error {
-	log.Println("Add Event")
-
-	if !Playing && len(AddTrack) == 0 {
-		log.Println("Unblock AddTrack")
-		AddTrack <- struct{}{}
-	}
-
-	return nil // always return nil since no errors can happen here
 }
 
 // Pause the Player

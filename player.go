@@ -11,8 +11,6 @@ import (
 	"github.com/op/go-libspotify/spotify"
 )
 
-var Playing bool = false
-
 const (
 	APPLICATION_NAME  string = "SFM_"
 	CACHE_LOCATION    string = "tmp"
@@ -189,7 +187,6 @@ func (p *Player) Play(uri *string) error {
 	log.Println(fmt.Sprintf("Playing: %s", *uri))
 	p.Player.Play() // This does NOT block, we must block ourselves
 	p.TrackTicker.Start()
-	Playing = true
 
 	// Runs a loop which increases track duration every second
 	go p.tickerIncreaser()
@@ -200,8 +197,6 @@ func (p *Player) Play(uri *string) error {
 
 	<-StopTrack // Blocks
 	StopTimer <- struct{}{}
-	Playing = false
-
 	log.Println(fmt.Sprintf("End: %s", *uri))
 
 	return nil
