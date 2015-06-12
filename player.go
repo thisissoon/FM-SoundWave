@@ -3,13 +3,15 @@
 package soundwave
 
 import (
-	"time"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"time"
 
 	"github.com/op/go-libspotify/spotify"
 )
+
+var Playing bool = false
 
 const (
 	APPLICATION_NAME  string = "SFM_"
@@ -22,8 +24,8 @@ var StopTrack chan struct{}
 var StopTimer chan struct{}
 
 type Ticker struct {
-	duration  int
-	step      int
+	duration int
+	step     int
 }
 
 func (t *Ticker) Start() {
@@ -53,14 +55,13 @@ func NewTicker() *Ticker {
 	return &Ticker{}
 }
 
-
 // Soundwave player, handles holding the connection to Spotify and
 // playing tracks
 type Player struct {
-	Audio        *audioWriter
-	Session      *spotify.Session
-	Player       *spotify.Player
-	TrackTicker  *Ticker
+	Audio       *audioWriter
+	Session     *spotify.Session
+	Player      *spotify.Player
+	TrackTicker *Ticker
 }
 
 // Constructs a new player taking the Spotify user, password and key path
@@ -188,6 +189,7 @@ func (p *Player) Play(uri *string) error {
 	log.Println(fmt.Sprintf("Playing: %s", *uri))
 	p.Player.Play() // This does NOT block, we must block ourselves
 	p.TrackTicker.Start()
+	Playing = true
 
 	// Runs a loop which increases track duration every second
 	go p.tickerIncreaser()
@@ -198,20 +200,22 @@ func (p *Player) Play(uri *string) error {
 
 	<-StopTrack // Blocks
 	StopTimer <- struct{}{}
+	Playing = false
+
 	log.Println(fmt.Sprintf("End: %s", *uri))
 
 	return nil
 }
 
 // Increase ticker duration
-func (p *Player) tickerIncreaser() (error) {
+func (p *Player) tickerIncreaser() error {
 	for {
 		tick := time.Tick(1 * time.Second)
 		select {
-			case <-StopTimer:
-				return nil
-			case <-tick:
-				p.TrackTicker.Increase()
+		case <-StopTimer:
+			return nil
+		case <-tick:
+			p.TrackTicker.Increase()
 		}
 	}
 }
@@ -236,11 +240,11 @@ func (p *Player) Resume() {
 	p.TrackTicker.Play()
 }
 
-func (p *Player) IsPlaying() (bool) {
+func (p *Player) IsPlaying() bool {
 	return p.TrackTicker.step > 0
 }
 
-func (p *Player) CurrentElapsedTime() (int) {
+func (p *Player) CurrentElapsedTime() int {
 	return p.TrackTicker.duration
 }
 
