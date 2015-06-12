@@ -5,8 +5,8 @@ package soundwave
 import (
 	"encoding/json"
 	"log"
-	"time"
 	"strconv"
+	"time"
 
 	"github.com/op/go-libspotify/spotify"
 
@@ -62,27 +62,32 @@ func NewPlaylist(k string, c string, r *redis.Client, p *Player) *Playlist {
 // or the track is stopped
 func (p *Playlist) Watch() {
 	for {
-		tick := time.Tick(1 * time.Second)
-		select {
-		case <-tick:
-			// If we are not logged in then we won't try and play a tack, we will try
-			// again on the next tick
-			if p.Player.Session.ConnectionState() == spotify.ConnectionStateLoggedIn {
-				value, err := p.RedisClient.LPop(p.RedisKeyName).Result()
-				if err == redis.Nil {
-					// Key does not exist so no items on the queue, no need to log this, would be
-					// very vebose
-				} else if err != nil {
-					log.Println(err)
-				} else {
-					// Play the item we just popped off the list
-					p.play(value) // Blocks
-				}
+		if p.Player.Session.ConnectionState() == spotify.ConnectionStateLoggedIn {
+			// Get the next track of the queue
+			track, err := p.Next() // Blocks until we get an item on the queue
+
+			// We got an err from Redis, lets just log it
+			if err != nil {
+				log.Println(err)
+			} else {
+				p.play(track) // Blocks
 			}
 		}
 	}
 }
 
+// Pop track of the top of the queue returning the value of the key or nil
+func (p *Playlist) Next() (string, error) {
+	// Value will be a []string containing [key, value]
+	result, err := p.RedisClient.BLPop(0, p.RedisKeyName).Result() // Blocks
+	if err == redis.Nil {
+		return "", nil // No key so no queue
+	} else if err != nil {
+		return "", err
+	} else {
+		return result[1], nil
+	}
+}
 
 // Publish current tract duration into redis
 func (p *Playlist) CurrentTrackDurationPublisher() {

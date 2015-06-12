@@ -3,10 +3,10 @@
 package soundwave
 
 import (
-	"time"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"time"
 
 	"github.com/op/go-libspotify/spotify"
 )
@@ -22,8 +22,8 @@ var StopTrack chan struct{}
 var StopTimer chan struct{}
 
 type Ticker struct {
-	duration  int
-	step      int
+	duration int
+	step     int
 }
 
 func (t *Ticker) Start() {
@@ -53,14 +53,13 @@ func NewTicker() *Ticker {
 	return &Ticker{}
 }
 
-
 // Soundwave player, handles holding the connection to Spotify and
 // playing tracks
 type Player struct {
-	Audio        *audioWriter
-	Session      *spotify.Session
-	Player       *spotify.Player
-	TrackTicker  *Ticker
+	Audio       *audioWriter
+	Session     *spotify.Session
+	Player      *spotify.Player
+	TrackTicker *Ticker
 }
 
 // Constructs a new player taking the Spotify user, password and key path
@@ -204,14 +203,14 @@ func (p *Player) Play(uri *string) error {
 }
 
 // Increase ticker duration
-func (p *Player) tickerIncreaser() (error) {
+func (p *Player) tickerIncreaser() error {
 	for {
 		tick := time.Tick(1 * time.Second)
 		select {
-			case <-StopTimer:
-				return nil
-			case <-tick:
-				p.TrackTicker.Increase()
+		case <-StopTimer:
+			return nil
+		case <-tick:
+			p.TrackTicker.Increase()
 		}
 	}
 }
@@ -236,11 +235,11 @@ func (p *Player) Resume() {
 	p.TrackTicker.Play()
 }
 
-func (p *Player) IsPlaying() (bool) {
+func (p *Player) IsPlaying() bool {
 	return p.TrackTicker.step > 0
 }
 
-func (p *Player) CurrentElapsedTime() (int) {
+func (p *Player) CurrentElapsedTime() int {
 	return p.TrackTicker.duration
 }
 
