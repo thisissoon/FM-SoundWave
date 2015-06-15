@@ -17,6 +17,7 @@ import (
 
 // Events we need to listen for
 const (
+	ADD_EVENT    string = "add"    // Add track event
 	RESUME_EVENT string = "resume" // Resume paused track
 	PAUSE_EVENT  string = "pause"  // Pause a playing track
 	STOP_EVENT   string = "stop"   // Stop the currently playing track
@@ -27,6 +28,13 @@ const PAUSE_STATE_KEY = "fm:player:paused"
 // Event type to unmarshal message payloads into
 type Event struct {
 	Type string `json:"event"`
+}
+
+// Add event JSON data structure
+type AddEvent struct {
+	Type string `json:"event"`
+	Uri  string `json:"uri"`
+	User string `json:"user"`
 }
 
 // Type for creating an event reactor
@@ -95,19 +103,33 @@ func (r *Reactor) processPayload(payload []byte) error {
 
 	// Switch the event type and hand off to handler method
 	switch e.Type {
+	case ADD_EVENT:
+		return r.addEventHandler(payload)
 	case PAUSE_EVENT:
-		return r.pausePlayer()
+		return r.pauseEventHandler()
 	case RESUME_EVENT:
-		return r.resumePlayer()
+		return r.resumeEventHandler()
 	case STOP_EVENT:
-		return r.stopTrack()
+		return r.stopEventHandler()
 	}
 
 	return nil
 }
 
-// Pause the Player
-func (r *Reactor) pausePlayer() error {
+// Handles add events. This will trigger the player to start prefetching the
+// track into the cache
+func (r *Reactor) addEventHandler(payload []byte) error {
+	i := &AddEvent{}
+	err := json.Unmarshal(payload, i)
+	if err != nil {
+		return err
+	}
+
+	return r.Player.Prefetch(&i.Uri)
+}
+
+// Pause event handler. This will trigger the player to pause
+func (r *Reactor) pauseEventHandler() error {
 	log.Println("Pause Event")
 	// Pause the Track
 	r.Player.Pause() // TODO: Use Channel
@@ -117,8 +139,9 @@ func (r *Reactor) pausePlayer() error {
 	return err
 }
 
-// Resume the Player
-func (r *Reactor) resumePlayer() error {
+// Resume event handler will trigger the player to resume playing
+// the track
+func (r *Reactor) resumeEventHandler() error {
 	log.Println("Resume Event")
 	// Play the Track
 	r.Player.Resume() // TODO: Use Channel
@@ -128,9 +151,9 @@ func (r *Reactor) resumePlayer() error {
 	return err
 }
 
-// Stop the Current Track - Unloading the track causing the next track
-// to be played
-func (r *Reactor) stopTrack() error {
+// Stop event handler will stop the current track forcing the player to
+// play the next track
+func (r *Reactor) stopEventHandler() error {
 	log.Println("Stop Event")
 
 	// Force the track to stop by placing a message on the StopTrack
