@@ -202,6 +202,17 @@ func (p *Player) Play(uri *string) error {
 	return nil
 }
 
+// Prefetch a Track
+func (p *Player) Prefetch(uri *string) error {
+	log.Println(fmt.Sprintf("Prefetch: %s", *uri))
+	track, err := p.LoadTrack(uri)
+	if err != nil {
+		return err
+	}
+
+	return p.Player.Prefetch(track)
+}
+
 // Increase ticker duration
 func (p *Player) tickerIncreaser() error {
 	for {
