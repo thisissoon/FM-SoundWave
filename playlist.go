@@ -64,20 +64,55 @@ func (p *Playlist) Watch() {
 	for {
 		if p.Player.Session.ConnectionState() == spotify.ConnectionStateLoggedIn {
 			// Get the next track of the queue
-			track, err := p.Next() // Blocks until we get an item on the queue
+			track, err := p.next() // Blocks until we get an item on the queue
 
 			// We got an err from Redis, lets just log it
 			if err != nil {
 				log.Println(err)
 			} else {
+				if err := p.prefetch(); err != nil {
+					log.Println(err)
+				}
 				p.play(track) // Blocks
 			}
 		}
 	}
 }
 
+// Pre-Fetch the next track if we have one
+func (p *Playlist) prefetch() error {
+	var err error
+
+	// Get next item in list, returns a list
+	result, err := p.RedisClient.LRange(p.RedisKeyName, 0, 0).Result()
+	if err != nil {
+		return err
+	}
+
+	log.Println(result)
+
+	// If we have a next track then lets prefetch it whilst the current one plays
+	if len(result) == 1 {
+
+		// Decode the JSON
+		i := &PlaylistItem{}
+		err = json.Unmarshal([]byte(result[0]), i)
+		if err != nil {
+			return err
+		}
+
+		// Tell player to prefetch
+		err = p.Player.Prefetch(&i.Uri)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Pop track of the top of the queue returning the value of the key or nil
-func (p *Playlist) Next() (string, error) {
+func (p *Playlist) next() (string, error) {
 	// Value will be a []string containing [key, value]
 	result, err := p.RedisClient.BLPop(0, p.RedisKeyName).Result() // Blocks
 	if err == redis.Nil {
