@@ -84,12 +84,10 @@ func (p *Playlist) prefetch() error {
 	var err error
 
 	// Get next item in list, returns a list
-	result, err := p.RedisClient.LRange(p.RedisKeyName, 0, 0).Result()
+	result, err := p.RedisClient.LRange(p.RedisKeyName, 1, 1).Result()
 	if err != nil {
 		return err
 	}
-
-	log.Println(result)
 
 	// If we have a next track then lets prefetch it whilst the current one plays
 	if len(result) == 1 {
