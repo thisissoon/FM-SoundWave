@@ -19,7 +19,7 @@ var (
 
 	// audioOutputBufferSize is the maximum number of bytes to buffer before
 	// passing it to PortAudio.
-	audioOutputBufferSize = 8192
+	audioOutputBufferSize = 1024
 )
 
 // audio wraps the delivered Spotify data into a single struct.
