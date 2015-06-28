@@ -13,8 +13,8 @@ import (
 
 const (
 	APPLICATION_NAME  string = "SFM_"
-	CACHE_LOCATION    string = "tmp"
-	SETTINGS_LOCATION string = "tmp"
+	CACHE_LOCATION    string = "/tmp/soundwave"
+	SETTINGS_LOCATION string = "/tmp/soundwave"
 )
 
 // Channel to detect when a track should be stopped
