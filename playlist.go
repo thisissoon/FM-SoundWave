@@ -13,9 +13,16 @@ import (
 	"gopkg.in/redis.v3"
 )
 
-const CURRENT_KEY string = "fm:player:current"
-const CURRENT_TRACK_ELAPSED_TIME string = "fm:player:elapsed_time"
+// Redis Keys
+const (
+	CURRENT_KEY                string = "fm:player:current"
+	CURRENT_TRACK_ELAPSED_TIME string = "fm:player:elapsed_time"
+	START_TIME_KEY             string = "fm:player:start_time"
+	PAUSE_TIME_KEY             string = "fm:player:pause_time"
+	PAUSED_DURATION_KEY        string = "fm:player:pause_duration"
+)
 
+// Event Names
 const (
 	PLAY_EVENT string = "play"
 	END_EVENT  string = "end"
@@ -185,6 +192,13 @@ func (p *Playlist) publishPlayEvent(item *PlaylistItem) error {
 		return err
 	}
 
+	// Set Start Time
+	now := time.Now()
+	err = p.RedisClient.Set(START_TIME_KEY, now.Format(time.RFC3339), 0).Err()
+	if err != nil {
+		return err
+	}
+
 	// Generate message JSON Payload
 	message, err := json.Marshal(&PublishEvent{
 		Event: PLAY_EVENT,
@@ -212,6 +226,12 @@ func (p *Playlist) publishEndEvent(item *PlaylistItem) error {
 
 	// Delete Current Track Key
 	err = p.RedisClient.Del(CURRENT_KEY).Err()
+	if err != nil {
+		return err
+	}
+
+	// Delete Start Time Key
+	err = p.RedisClient.Del(START_TIME_KEY).Err()
 	if err != nil {
 		return err
 	}
