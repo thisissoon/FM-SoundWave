@@ -18,8 +18,6 @@ const (
 	CURRENT_KEY                string = "fm:player:current"
 	CURRENT_TRACK_ELAPSED_TIME string = "fm:player:elapsed_time"
 	START_TIME_KEY             string = "fm:player:start_time"
-	PAUSE_TIME_KEY             string = "fm:player:pause_time"
-	PAUSED_DURATION_KEY        string = "fm:player:pause_duration"
 )
 
 // Event Names

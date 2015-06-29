@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"log"
 	"strings"
+	"time"
 
 	"gopkg.in/redis.v3"
 )
@@ -23,7 +24,11 @@ const (
 	STOP_EVENT   string = "stop"   // Stop the currently playing track
 )
 
-const PAUSE_STATE_KEY = "fm:player:paused"
+const (
+	PAUSE_STATE_KEY     string = "fm:player:paused"
+	PAUSE_TIME_KEY      string = "fm:player:pause_time"
+	PAUSED_DURATION_KEY string = "fm:player:pause_duration"
+)
 
 // Event type to unmarshal message payloads into
 type Event struct {
@@ -135,6 +140,9 @@ func (r *Reactor) pauseEventHandler() error {
 	r.Player.Pause() // TODO: Use Channel
 	// Set the Redis Key for Storing Player Pause State
 	err := r.RedisClient.Set(PAUSE_STATE_KEY, "1", 0).Err()
+	// Set the Current Pause Time
+	now := time.Now()
+	err = r.RedisClient.Set(PAUSE_TIME_KEY, now.Format(time.RFC3339), 0).Err()
 
 	return err
 }
@@ -147,6 +155,8 @@ func (r *Reactor) resumeEventHandler() error {
 	r.Player.Resume() // TODO: Use Channel
 	// Set the Redis Key for Storing Player Pause State
 	err := r.RedisClient.Set(PAUSE_STATE_KEY, "0", 0).Err()
+	// Delete the pause time
+	err = r.RedisClient.Del(PAUSE_TIME_KEY).Err()
 
 	return err
 }
