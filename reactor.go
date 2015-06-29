@@ -9,11 +9,19 @@ package soundwave
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
 	"gopkg.in/redis.v3"
+)
+
+// Vars for holding pause state
+var (
+	PAUSE_DURATION int64     = 0 // Total time we have been paused
+	PAUSE_START    time.Time     // Time time current pause was started
 )
 
 // Events we need to listen for
@@ -116,6 +124,8 @@ func (r *Reactor) processPayload(payload []byte) error {
 		return r.resumeEventHandler()
 	case STOP_EVENT:
 		return r.stopEventHandler()
+	case PLAY_EVENT:
+		return r.playEventHandler()
 	}
 
 	return nil
@@ -142,6 +152,7 @@ func (r *Reactor) pauseEventHandler() error {
 	err := r.RedisClient.Set(PAUSE_STATE_KEY, "1", 0).Err()
 	// Set the Current Pause Time
 	now := time.Now()
+	PAUSE_START = now
 	err = r.RedisClient.Set(PAUSE_TIME_KEY, now.Format(time.RFC3339), 0).Err()
 
 	return err
@@ -157,6 +168,14 @@ func (r *Reactor) resumeEventHandler() error {
 	err := r.RedisClient.Set(PAUSE_STATE_KEY, "0", 0).Err()
 	// Delete the pause time
 	err = r.RedisClient.Del(PAUSE_TIME_KEY).Err()
+	// Calculate total ms we were paused
+	now := time.Now()
+	delta := now.Sub(PAUSE_START)
+	paused_for := delta.Nanoseconds() / int64(time.Millisecond)
+	PAUSE_DURATION += paused_for
+	// Save Pause Durration to Redis
+	err = r.RedisClient.Set(PAUSED_DURATION_KEY, strconv.FormatInt(PAUSE_DURATION, 10), 0).Err()
+	log.Println(fmt.Sprintf("Paused for %d", paused_for))
 
 	return err
 }
@@ -171,4 +190,20 @@ func (r *Reactor) stopEventHandler() error {
 	StopTrack <- struct{}{}
 
 	return nil // always return nil since no errors can happen here
+}
+
+// On play events we want to reset our pause times etc
+func (r *Reactor) playEventHandler() error {
+	var err error
+	log.Println("Play Event")
+
+	// Zero
+	PAUSE_DURATION = 0
+	PAUSE_START = time.Time{}
+
+	// Ensure keys are removed
+	err = r.RedisClient.Del(PAUSE_TIME_KEY).Err()
+	err = r.RedisClient.Del(PAUSED_DURATION_KEY).Err()
+
+	return err
 }
