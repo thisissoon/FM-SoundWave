@@ -151,7 +151,7 @@ func (r *Reactor) pauseEventHandler() error {
 	// Set the Redis Key for Storing Player Pause State
 	err := r.RedisClient.Set(PAUSE_STATE_KEY, "1", 0).Err()
 	// Set the Current Pause Time
-	now := time.Now()
+	now := time.Now().UTC()
 	PAUSE_START = now
 	err = r.RedisClient.Set(PAUSE_TIME_KEY, now.Format(time.RFC3339), 0).Err()
 
@@ -169,7 +169,7 @@ func (r *Reactor) resumeEventHandler() error {
 	// Delete the pause time
 	err = r.RedisClient.Del(PAUSE_TIME_KEY).Err()
 	// Calculate total ms we were paused
-	now := time.Now()
+	now := time.Now().UTC()
 	delta := now.Sub(PAUSE_START)
 	paused_for := delta.Nanoseconds() / int64(time.Millisecond)
 	PAUSE_DURATION += paused_for

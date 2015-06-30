@@ -191,7 +191,7 @@ func (p *Playlist) publishPlayEvent(item *PlaylistItem) error {
 	}
 
 	// Set Start Time
-	now := time.Now()
+	now := time.Now().UTC()
 	err = p.RedisClient.Set(START_TIME_KEY, now.Format(time.RFC3339), 0).Err()
 	if err != nil {
 		return err
