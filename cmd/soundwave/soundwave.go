@@ -21,6 +21,9 @@ var (
 	redis_address string
 	redis_queue   string
 	redis_channel string
+
+	perceptorAddr string
+	secret        string
 )
 
 var soundWaveCmdLongDesc = `Sound Wave Plays Spotify Music for SOON_ FM`
@@ -79,6 +82,9 @@ func init() {
 	SoundWaveCmd.Flags().StringVarP(&redis_address, "redis", "r", "127.0.0.1:6379", "Redis Server Address")
 	SoundWaveCmd.Flags().StringVarP(&redis_queue, "queue", "q", "", "Redis Queue Name")
 	SoundWaveCmd.Flags().StringVarP(&redis_channel, "channel", "c", "", "Redis Channel Name")
+	// Perceptor Flags
+	SoundWaveCmd.Flags().StringVarP(&perceptorAddr, "perceptor", "p", "perceptor.thisissoon.fm", "Perceptor Address")
+	SoundWaveCmd.Flags().StringVarP(&perceptorAddr, "secret", "s", "CHANGE_ME", "Secret Key")
 }
 
 func main() {
