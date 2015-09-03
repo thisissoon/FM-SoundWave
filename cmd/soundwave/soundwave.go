@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/thisissoon/FM-SoundWave"
+	"github.com/thisissoon/FM-SoundWave/perceptor"
 	redis "gopkg.in/redis.v3"
 )
 
@@ -33,6 +34,10 @@ var SoundWaveCmd = &cobra.Command{
 	Short: "Play Spotify Music for SOON_ FM",
 	Long:  soundWaveCmdLongDesc,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Create Perceptor
+		p := perceptor.New(perceptorAddr, secret)
+		go p.WSConnection()
+
 		// Create a new Player
 		player, err := soundwave.NewPlayer(&spotify_user, &spotify_pass, &spotify_key)
 		if err != nil {
@@ -83,8 +88,8 @@ func init() {
 	SoundWaveCmd.Flags().StringVarP(&redis_queue, "queue", "q", "", "Redis Queue Name")
 	SoundWaveCmd.Flags().StringVarP(&redis_channel, "channel", "c", "", "Redis Channel Name")
 	// Perceptor Flags
-	SoundWaveCmd.Flags().StringVarP(&perceptorAddr, "perceptor", "p", "perceptor.thisissoon.fm", "Perceptor Address")
-	SoundWaveCmd.Flags().StringVarP(&perceptorAddr, "secret", "s", "CHANGE_ME", "Secret Key")
+	SoundWaveCmd.Flags().StringVarP(&perceptorAddr, "perceptor", "t", "perceptor.thisissoon.fm", "Perceptor Address")
+	SoundWaveCmd.Flags().StringVarP(&secret, "secret", "s", "CHANGE_ME", "Secret Key")
 }
 
 func main() {
