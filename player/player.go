@@ -37,8 +37,12 @@ func (p *Player) Run() {
 			log.Infof("Failed to Get Track: %s", err)
 			continue
 		}
-		p.play(track)                // Blocks
-		p.pcptr.End(track)           // Publish end event
+		p.play(track)      // Blocks
+		p.pcptr.End(track) // Publish end event
+		// Drain check channel
+		for {
+			<-p.channels.CheckNext
+		}
 		p.channels.CheckNext <- true // We finished, do we have another track?
 	}
 }
