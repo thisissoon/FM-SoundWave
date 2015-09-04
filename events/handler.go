@@ -44,7 +44,7 @@ func (h *Handler) Run() {
 		case STOP_EVENT:
 			// pass to stop channel
 			log.Debugf("Place on Stop Channel: %s", msg)
-			h.out.Stop <- true
+			h.out.Skip <- true
 		}
 	}
 }

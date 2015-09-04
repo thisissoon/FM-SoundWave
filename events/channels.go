@@ -8,6 +8,7 @@ type Channels struct {
 	End     chan []byte
 	Pause   chan bool
 	Stop    chan bool
+	Skip    chan bool
 	HasNext chan bool
 }
 
@@ -18,6 +19,7 @@ func NewChannels() *Channels {
 		End:     make(chan []byte),
 		Pause:   make(chan bool),
 		Stop:    make(chan bool),
+		Skip:    make(chan bool),
 		HasNext: make(chan bool, 1),
 	}
 }

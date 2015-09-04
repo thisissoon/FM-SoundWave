@@ -74,6 +74,15 @@ func (p *Player) pauseEventHandler() {
 	}
 }
 
+// Handle Skip events
+func (p *Player) skipEventHandler() {
+	for {
+		<-p.channels.Skip
+		log.Debug("Handle Skip Event")
+		p.channels.Stop <- true
+	}
+}
+
 // Load Track from Spotify - Does not play it
 func (p *Player) loadTrack(uri string) (*spotify.Track, error) {
 	log.Infof("Load Track: %s", uri)
