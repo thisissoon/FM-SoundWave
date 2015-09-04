@@ -13,6 +13,12 @@ import (
 	"github.com/thisissoon/FM-SoundWave/perceptor"
 )
 
+// Vars for holding pause state
+var (
+	PAUSE_DURATION int64     = 0 // Total time we have been paused
+	PAUSE_START    time.Time     // Time time current pause was started
+)
+
 // Our Actual Spotify Player
 type Player struct {
 	audio    *audioWriter
@@ -52,10 +58,16 @@ func (p *Player) pauseEventHandler() {
 		pause := <-p.channels.Pause
 		if pause {
 			log.Info("Pause Player")
-			go p.pcptr.Pause(time.Now().UTC())
+			PAUSE_START = time.Now().UTC()
+			go p.pcptr.Pause(PAUSE_START)
 			p.player.Pause()
 		} else {
 			log.Info("Resume Player")
+			now := time.Now().UTC()
+			delta := now.Sub(PAUSE_START)
+			paused_for := delta.Nanoseconds() / int64(time.Millisecond)
+			PAUSE_DURATION += paused_for
+			go p.pcptr.Resume(PAUSE_DURATION)
 			p.player.Play()
 		}
 	}

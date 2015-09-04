@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -35,6 +36,10 @@ type playEvent struct {
 
 type pauseEvent struct {
 	Start string `json:"start"`
+}
+
+type resumeEvent struct {
+	Duration string `json:"duration"`
 }
 
 // Generates a HMAC Signature for the given data blob
@@ -123,6 +128,29 @@ func (p *Perceptor) Pause(start time.Time) {
 	})
 	if err != nil {
 		log.Errorf("Failed to marshal pause event: %s", err)
+	}
+
+	// Create Request
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	req.Header.Add("Signature", p.Sign(payload))
+
+	// Make request and log
+	resp, err := client.Do(req)
+	log.Infof("POST %s: %v", url, resp.StatusCode)
+}
+
+// POST's pause event to perspector
+func (p *Perceptor) Resume(duration int64) {
+	// Build urls / client
+	url := fmt.Sprintf("http://%s/events/resume", p.addr)
+	client := &http.Client{}
+
+	// Create payload
+	payload, err := json.Marshal(&resumeEvent{
+		Duration: strconv.FormatInt(duration, 10),
+	})
+	if err != nil {
+		log.Errorf("Failed to marshal resume event: %s", err)
 	}
 
 	// Create Request
