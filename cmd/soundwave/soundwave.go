@@ -15,18 +15,6 @@ import (
 	"github.com/thisissoon/FM-SoundWave/perceptor"
 )
 
-var (
-	spotify_user  string
-	spotify_pass  string
-	spotify_key   string
-	redis_address string
-	redis_queue   string
-	redis_channel string
-
-	perceptorAddr string
-	secret        string
-)
-
 var soundWaveCmdLongDesc = `Sound Wave Plays Spotify Music for SOON_ FM`
 
 var SoundWaveCmd = &cobra.Command{
@@ -45,7 +33,10 @@ var SoundWaveCmd = &cobra.Command{
 		go handler.Run()
 
 		// Create Perceptor
-		p := perceptor.New(perceptorAddr, secret, handler.ReceiveChannel())
+		p := perceptor.New(
+			viper.GetString("perceptor_address"),
+			viper.GetString("secret"),
+			handler.ReceiveChannel())
 		go p.WSConnection()
 
 		// // Create a new Player
