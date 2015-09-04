@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/thisissoon/FM-SoundWave/events"
 	"github.com/thisissoon/FM-SoundWave/perceptor"
+	"github.com/thisissoon/FM-SoundWave/player"
 )
 
 var soundWaveCmdLongDesc = `Sound Wave Plays Spotify Music for SOON_ FM`
@@ -33,11 +34,26 @@ var SoundWaveCmd = &cobra.Command{
 		go handler.Run()
 
 		// Create Perceptor
-		p := perceptor.New(
+		pcptr := perceptor.New(
 			viper.GetString("perceptor_address"),
 			viper.GetString("secret"),
-			handler.ReceiveChannel())
-		go p.WSConnection()
+			handler.ReceiveChannel(),
+			channels)
+		go pcptr.WSConnection()
+
+		// Create Player
+		player, err := player.New(
+			viper.GetString("spotify.user"),
+			viper.GetString("spotify.pass"),
+			viper.GetString("spotify.key"),
+			pcptr,
+			channels)
+		if err != nil {
+			// Exit on error
+			log.Fatalf("Failed to create player: %s", err)
+		}
+		// Run the player - this will play the music
+		go player.Run()
 
 		// // Create a new Player
 		// player, err := soundwave.NewPlayer(&spotify_user, &spotify_pass, &spotify_key)
