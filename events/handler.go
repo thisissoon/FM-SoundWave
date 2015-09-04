@@ -36,11 +36,11 @@ func (h *Handler) Run() {
 		case PAUSE_EVENT:
 			// pass to pause channel
 			log.Debugf("Place on Pause Channel: %s", msg)
-			h.out.Pause <- msg
+			h.out.Pause <- true
 		case RESUME_EVENT:
 			// pass to resume channel
 			log.Debugf("Place on Resume Channel: %s", msg)
-			h.out.Resume <- msg
+			h.out.Pause <- false
 		case STOP_EVENT:
 			// pass to stop channel
 			log.Debugf("Place on Stop Channel: %s", msg)

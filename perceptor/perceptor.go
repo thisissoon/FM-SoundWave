@@ -103,7 +103,7 @@ func (p *Perceptor) Play(t *Track) {
 
 	// Make request and log
 	resp, err := client.Do(req)
-	log.Infof("GET %s: %v", url, resp.StatusCode)
+	log.Infof("POST %s: %v", url, resp.StatusCode)
 }
 
 // Starts a websocket connection to the Perceptor Event Service

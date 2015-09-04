@@ -6,8 +6,7 @@ type Channels struct {
 	Add     chan []byte
 	Play    chan []byte
 	End     chan []byte
-	Pause   chan []byte
-	Resume  chan []byte
+	Pause   chan bool
 	Stop    chan bool
 	HasNext chan bool
 }
@@ -17,8 +16,7 @@ func NewChannels() *Channels {
 		Add:     make(chan []byte),
 		Play:    make(chan []byte),
 		End:     make(chan []byte),
-		Pause:   make(chan []byte),
-		Resume:  make(chan []byte),
+		Pause:   make(chan bool),
 		Stop:    make(chan bool),
 		HasNext: make(chan bool, 1),
 	}

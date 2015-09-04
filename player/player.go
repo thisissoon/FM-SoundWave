@@ -45,6 +45,20 @@ func (p *Player) addEventHandler() {
 	}
 }
 
+// Handles pause events
+func (p *Player) pauseEventHandler() {
+	for {
+		pause := <-p.channels.Pause
+		if pause {
+			log.Info("Pause Player")
+			p.player.Pause()
+		} else {
+			log.Info("Resume Player")
+			p.player.Play()
+		}
+	}
+}
+
 // Load Track from Spotify - Does not play it
 func (p *Player) loadTrack(uri string) (*spotify.Track, error) {
 	log.Infof("Load Track: %s", uri)
@@ -185,7 +199,9 @@ func New(
 		player:   session.Player(),
 	}
 
+	// Start our event handlers
 	go player.addEventHandler()
+	go player.pauseEventHandler()
 
 	return player, nil
 }
