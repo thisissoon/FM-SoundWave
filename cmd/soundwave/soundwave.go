@@ -55,34 +55,6 @@ var SoundWaveCmd = &cobra.Command{
 		// Run the player - this will play the music
 		go player.Run()
 
-		// // Create a new Player
-		// player, err := soundwave.NewPlayer(&spotify_user, &spotify_pass, &spotify_key)
-		// if err != nil {
-		// 	log.Fatalln(err) // Exit on failure to create player
-		// }
-
-		// defer player.Session.Close() // Close Session
-		// defer player.Audio.Close()   // Close Audio Writer
-
-		// // Create a redis client
-		// redis_client := redis.NewClient(&redis.Options{
-		// 	Network: "tcp",
-		// 	Addr:    redis_address,
-		// })
-
-		// // Create playlist
-		// playlist := soundwave.NewPlaylist(redis_queue, redis_channel, redis_client, player)
-		// // Watch playlist
-		// go playlist.Watch()
-
-		// // Publish track duration
-		// go playlist.CurrentTrackDurationPublisher()
-
-		// // Create Event Reactor
-		// reactor := soundwave.NewReactor(redis_channel, redis_client, player)
-		// // Spin off reactor consumer gorountiune
-		// go reactor.Consume()
-
 		// Channel to listen for OS Signals
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, os.Kill)
