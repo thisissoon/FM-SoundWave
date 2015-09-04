@@ -31,14 +31,15 @@ type Player struct {
 // Runs the player - plays the sweet sweet music
 func (p *Player) Run() {
 	for {
-		<-p.channels.HasNext // Block until we have a next track
+		<-p.channels.CheckNext // Block until we have a next track
 		track, err := p.pcptr.Next()
 		if err != nil {
 			log.Infof("Failed to Get Track: %s", err)
 			continue
 		}
-		p.play(track)      // Blocks
-		p.pcptr.End(track) // Publish end event
+		p.play(track)                // Blocks
+		p.pcptr.End(track)           // Publish end event
+		p.channels.CheckNext <- true // We finished, do we have another track?
 	}
 }
 
@@ -47,8 +48,8 @@ func (p *Player) addEventHandler() {
 	for {
 		<-p.channels.Add
 		log.Debug("Handle Add Event")
-		if len(p.channels.HasNext) == 0 {
-			p.channels.HasNext <- true
+		if len(p.channels.CheckNext) == 0 {
+			p.channels.CheckNext <- true
 		}
 	}
 }
@@ -230,6 +231,7 @@ func New(
 	// Start our event handlers
 	go player.addEventHandler()
 	go player.pauseEventHandler()
+	go player.skipEventHandler()
 
 	return player, nil
 }

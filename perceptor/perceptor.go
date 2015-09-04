@@ -215,8 +215,8 @@ func (p *Perceptor) WSConnection() {
 		}
 		log.Infof("Connected to: %s", p.addr)
 		// Always ensure we unblock the player when we restore connections
-		if len(p.channels.HasNext) == 0 {
-			p.channels.HasNext <- true
+		if len(p.channels.CheckNext) == 0 {
+			p.channels.CheckNext <- true
 		}
 	ReadLoop:
 		for {
