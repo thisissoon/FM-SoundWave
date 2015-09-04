@@ -30,7 +30,7 @@ func (p *Player) Run() {
 			log.Infof("Failed to Get Track: %s", err)
 			continue
 		}
-		p.play(track.Uri) // blocks
+		p.play(track) // blocks
 	}
 }
 
@@ -71,9 +71,9 @@ func (p *Player) loadTrack(uri string) (*spotify.Track, error) {
 }
 
 // Play a track until the end or we get message on the StopTrack channel
-func (p *Player) play(uri string) error {
+func (p *Player) play(t *perceptor.Track) error {
 	// Get the track
-	track, err := p.loadTrack(uri)
+	track, err := p.loadTrack(t.Uri)
 	if err != nil {
 		return err
 	}
@@ -87,8 +87,14 @@ func (p *Player) play(uri string) error {
 	// Defer unloading the track until we exit this func
 	defer p.player.Unload()
 
+	// Send play event to perspector - go routine so we don't block
+	go func() {
+		p.pcptr.Play(t)
+		return
+	}()
+
 	// Play the track
-	log.Println(fmt.Sprintf("Playing: %s", uri))
+	log.Println(fmt.Sprintf("Playing: %s", t.Uri))
 	p.player.Play() // This does NOT block, we must block ourselves
 
 	// Go routine to listen for end of track updates from the player, once we get one
@@ -101,7 +107,7 @@ func (p *Player) play(uri string) error {
 	}()
 
 	<-p.channels.Stop // Blocks
-	log.Infof(fmt.Sprintf("Track stopped: %s", uri))
+	log.Infof(fmt.Sprintf("Track stopped: %s", t.Uri))
 
 	return nil
 }

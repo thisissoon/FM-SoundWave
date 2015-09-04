@@ -7,6 +7,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -24,6 +25,12 @@ type Perceptor struct {
 	secret   string           // soundwaves client key
 	channel  chan []byte      // channel to send events too
 	channels *events.Channels // Event channels
+}
+
+type playEvent struct {
+	Start string `json:"start"`
+	Uri   string `json:"uri"`
+	User  string `json:"user"`
 }
 
 // Generates a HMAC Signature for the given data blob
@@ -73,6 +80,30 @@ func (p *Perceptor) Next() (*Track, error) {
 	}
 
 	return t, nil
+}
+
+// POST's play event to perspector
+func (p *Perceptor) Play(t *Track) {
+	// Build urls / client
+	url := fmt.Sprintf("http://%s/events/play", p.addr)
+	client := &http.Client{}
+
+	// Create payload
+	payload, err := json.Marshal(&playEvent{
+		Start: time.Now().UTC().Format(time.RFC3339),
+		Uri:   t.Uri,
+		User:  t.User})
+	if err != nil {
+		log.Errorf("Failed to marshal Track: %s", err)
+	}
+
+	// Create Request
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	req.Header.Add("Signature", p.Sign(payload))
+
+	// Make request and log
+	resp, err := client.Do(req)
+	log.Infof("GET %s: %v", url, resp.StatusCode)
 }
 
 // Starts a websocket connection to the Perceptor Event Service
