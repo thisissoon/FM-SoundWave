@@ -5,6 +5,7 @@ package player
 import (
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/op/go-libspotify/spotify"
@@ -51,6 +52,7 @@ func (p *Player) pauseEventHandler() {
 		pause := <-p.channels.Pause
 		if pause {
 			log.Info("Pause Player")
+			go p.pcptr.Pause(time.Now().UTC())
 			p.player.Pause()
 		} else {
 			log.Info("Resume Player")
@@ -103,7 +105,7 @@ func (p *Player) play(t *perceptor.Track) error {
 
 	// Send play event to perspector - go routine so we don't block
 	go func() {
-		p.pcptr.Play(t)
+		p.pcptr.Play(t, time.Now().UTC())
 		return
 	}()
 

@@ -33,6 +33,10 @@ type playEvent struct {
 	User  string `json:"user"`
 }
 
+type pauseEvent struct {
+	Start string `json:"start"`
+}
+
 // Generates a HMAC Signature for the given data blob
 func (p *Perceptor) Sign(d []byte) string {
 	mac := hmac.New(sha256.New, []byte(p.secret))
@@ -83,18 +87,42 @@ func (p *Perceptor) Next() (*Track, error) {
 }
 
 // POST's play event to perspector
-func (p *Perceptor) Play(t *Track) {
+func (p *Perceptor) Play(t *Track, start time.Time) {
 	// Build urls / client
 	url := fmt.Sprintf("http://%s/events/play", p.addr)
 	client := &http.Client{}
 
 	// Create payload
 	payload, err := json.Marshal(&playEvent{
-		Start: time.Now().UTC().Format(time.RFC3339),
+		Start: start.Format(time.RFC3339),
 		Uri:   t.Uri,
-		User:  t.User})
+		User:  t.User,
+	})
 	if err != nil {
 		log.Errorf("Failed to marshal Track: %s", err)
+	}
+
+	// Create Request
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	req.Header.Add("Signature", p.Sign(payload))
+
+	// Make request and log
+	resp, err := client.Do(req)
+	log.Infof("POST %s: %v", url, resp.StatusCode)
+}
+
+// POST's pause event to perspector
+func (p *Perceptor) Pause(start time.Time) {
+	// Build urls / client
+	url := fmt.Sprintf("http://%s/events/pause", p.addr)
+	client := &http.Client{}
+
+	// Create payload
+	payload, err := json.Marshal(&pauseEvent{
+		Start: start.Format(time.RFC3339),
+	})
+	if err != nil {
+		log.Errorf("Failed to marshal pause event: %s", err)
 	}
 
 	// Create Request
