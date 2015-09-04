@@ -1,8 +1,7 @@
 // Pakcage for Streaming Audio to Port Audio
-//
 // Taken from: https://github.com/op/go-libspotify/blob/master/examples/portaudio/portaudio.go
 
-package soundwave
+package audio
 
 import (
 	"sync"
