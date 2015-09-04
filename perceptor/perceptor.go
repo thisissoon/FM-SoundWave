@@ -16,8 +16,9 @@ import (
 
 // Provides an interface to Perceptor
 type Perceptor struct {
-	addr   string // address to Perceptor
-	secret string // soundwaves client key
+	addr    string      // address to Perceptor
+	secret  string      // soundwaves client key
+	channel chan []byte // channel to send events too
 }
 
 // Generates a HMAC Signature for the given data blob
@@ -61,8 +62,7 @@ func (p *Perceptor) WSConnection() {
 			} else {
 				// Only act on the message if it's Text
 				if msgType == websocket.TextMessage {
-					// TODO: Put on Chanel
-					fmt.Println(msg)
+					p.channel <- msg
 				}
 			}
 		}
@@ -71,9 +71,10 @@ func (p *Perceptor) WSConnection() {
 }
 
 // Constructs a new Perceptor instance
-func New(a string, s string) *Perceptor {
+func New(a string, s string, c chan []byte) *Perceptor {
 	return &Perceptor{
-		addr:   a,
-		secret: s,
+		addr:    a,
+		secret:  s,
+		channel: c,
 	}
 }
