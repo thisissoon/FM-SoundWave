@@ -26,3 +26,4 @@ _testmain.go
 .env
 tmp
 /soundwave
+/.soundwave

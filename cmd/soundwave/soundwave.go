@@ -94,7 +94,7 @@ func init() {
 
 	// Defaults
 	viper.SetDefault("perceptor_address", "localhost:9000")
-	viper.SetDefault("secret", "fooo")
+	viper.SetDefault("secret", "foo")
 	viper.SetDefault("log_level", "warn")
 	viper.SetDefault("spotify", map[string]string{
 		"user": "CHANGE_ME",
