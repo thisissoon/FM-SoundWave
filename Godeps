@@ -14,3 +14,5 @@ github.com/spf13/cobra              69e5f196b5d30673deb07a2221d89cf62e4b74ae
 github.com/gorilla/websocket        b6ab76f1fe9803ee1d59e7e5b2a797c1fe897ce5
 # Logging
 github.com/Sirupsen/logrus          84b968cb9f82d727044973f8255489bbe15e9948
+# Viper
+github.com/spf13/viper              3c0ff861e3d9906ecc4ebfb7e41557d44d3e277b
