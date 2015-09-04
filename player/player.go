@@ -37,7 +37,8 @@ func (p *Player) Run() {
 			log.Infof("Failed to Get Track: %s", err)
 			continue
 		}
-		p.play(track) // blocks
+		p.play(track)      // Blocks
+		p.pcptr.End(track) // Publish end event
 	}
 }
 
@@ -100,6 +101,10 @@ func (p *Player) loadTrack(uri string) (*spotify.Track, error) {
 
 // Play a track until the end or we get message on the StopTrack channel
 func (p *Player) play(t *perceptor.Track) error {
+	// Reset Pause State
+	PAUSE_DURATION = 0
+	PAUSE_START = time.Time{}
+
 	// Get the track
 	track, err := p.loadTrack(t.Uri)
 	if err != nil {
