@@ -20,6 +20,6 @@ func NewChannels() *Channels {
 		Pause:     make(chan bool),
 		Stop:      make(chan bool),
 		Skip:      make(chan bool),
-		CheckNext: make(chan bool, 4),
+		CheckNext: make(chan bool, 1),
 	}
 }

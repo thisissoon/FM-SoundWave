@@ -31,19 +31,14 @@ type Player struct {
 // Runs the player - plays the sweet sweet music
 func (p *Player) Run() {
 	for {
-		<-p.channels.CheckNext // Block until we have a next track
 		track, err := p.pcptr.Next()
 		if err != nil {
 			log.Infof("Failed to Get Track: %s", err)
+			<-p.channels.CheckNext // Block until we have a next track
 			continue
 		}
 		p.play(track)      // Blocks
 		p.pcptr.End(track) // Publish end event
-		// Drain check channel
-		for {
-			<-p.channels.CheckNext
-		}
-		p.channels.CheckNext <- true // We finished, do we have another track?
 	}
 }
 
