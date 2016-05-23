@@ -7,7 +7,7 @@ import (
 	"sync"
 	"syscall"
 
-	"code.google.com/p/portaudio-go/portaudio"
+	"github.com/gordonklaus/portaudio"
 	"github.com/op/go-libspotify/spotify"
 )
 

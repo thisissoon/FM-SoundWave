@@ -3,14 +3,16 @@
 #
 
 # Port Audio Bindings
-code.google.com/p/portaudio-go/portaudio
+github.com/gordonklaus/portaudio
 # libspotify Bindings
 github.com/op/go-libspotify/spotify 12dd11fb33ecf760c356b65dc1116bc92589dea4
 # Cobra - POSIX CLI
-github.com/spf13/cobra              69e5f196b5d30673deb07a2221d89cf62e4b74ae
+github.com/spf13/cobra              f368244301305f414206f889b1735a54cfc8bde8
 # Websocket Support
 github.com/gorilla/websocket        b6ab76f1fe9803ee1d59e7e5b2a797c1fe897ce5
 # Logging
 github.com/Sirupsen/logrus          84b968cb9f82d727044973f8255489bbe15e9948
 # Viper
 github.com/spf13/viper              3c0ff861e3d9906ecc4ebfb7e41557d44d3e277b
+
+github.com/zabawaba99/firego
